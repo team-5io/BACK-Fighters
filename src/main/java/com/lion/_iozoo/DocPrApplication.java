@@ -6,8 +6,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 @EnableJpaAuditing // JPA Auditing 활성화 (생성일, 수정일 자동 기록)
 @SpringBootApplication
-public class Application {
+public class DocPrApplication {
 	public static void main(String[] args) {
-		SpringApplication.run(Application.class, args);
+		SpringApplication.run(DocPrApplication.class, args);
 	}
 }
