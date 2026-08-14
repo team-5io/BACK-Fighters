@@ -24,4 +24,13 @@ public class TeamPermissionChecker {
             throw new ForbiddenException();
         }
     }
+
+    /**
+     * userId가 teamId에 소속된 팀원(MEMBER/ADMIN 무관)이 아니면 ForbiddenException을 던진다.
+     */
+    public void requireMember(Long teamId, Long userId) {
+        if (!teamMemberRepository.existsByTeamIdAndUserId(teamId, userId)) {
+            throw new ForbiddenException();
+        }
+    }
 }

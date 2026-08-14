@@ -6,6 +6,7 @@ import com.lion._iozoo.team.application.command.CreateTeamCommand;
 import com.lion._iozoo.team.application.command.InviteTeamMemberCommand;
 import com.lion._iozoo.team.application.usecase.CreateTeamUseCase;
 import com.lion._iozoo.team.application.usecase.InviteTeamMemberUseCase;
+import com.lion._iozoo.team.application.usecase.ListTeamMembersUseCase;
 import com.lion._iozoo.team.application.usecase.RemoveTeamMemberUseCase;
 import com.lion._iozoo.team.infrastructure.persistence.TeamEntity;
 import com.lion._iozoo.team.infrastructure.persistence.TeamMemberEntity;
@@ -18,11 +19,14 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/teams")
@@ -32,6 +36,7 @@ public class TeamController {
     private final CreateTeamUseCase createTeamUseCase;
     private final InviteTeamMemberUseCase inviteTeamMemberUseCase;
     private final RemoveTeamMemberUseCase removeTeamMemberUseCase;
+    private final ListTeamMembersUseCase listTeamMembersUseCase;
 
     @PostMapping
     public GlobalApiResponse<TeamResponse> createTeam(
@@ -65,5 +70,18 @@ public class TeamController {
         removeTeamMemberUseCase.remove(teamId, authUser.userId(), memberId);
 
         return GlobalApiResponse.ok(TeamResponseCode.TEAM_MEMBER_REMOVED);
+    }
+
+    @GetMapping("/{teamId}/members")
+    public GlobalApiResponse<List<TeamMemberResponse>> listTeamMembers(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long teamId) {
+
+        List<TeamMemberResponse> members = listTeamMembersUseCase.listMembers(teamId, authUser.userId())
+                .stream()
+                .map(TeamMemberResponse::from)
+                .toList();
+
+        return GlobalApiResponse.ok(TeamResponseCode.TEAM_MEMBERS_FETCHED, members);
     }
 }
