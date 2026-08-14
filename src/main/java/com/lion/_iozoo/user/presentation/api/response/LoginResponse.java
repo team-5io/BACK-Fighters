@@ -3,16 +3,18 @@ package com.lion._iozoo.user.presentation.api.response;
 import com.lion._iozoo.user.domain.User;
 import lombok.Builder;
 
+import java.util.UUID;
+
 @Builder
 public record LoginResponse(
-        Long id,
+        UUID publicId,
         String email,
         String name,
         String accessToken
 ) {
     public static LoginResponse of(User user, String accessToken) {
         return LoginResponse.builder()
-                .id(user.getId())
+                .publicId(user.getPublicId())
                 .email(user.getEmail())
                 .name(user.getName())
                 .accessToken(accessToken)

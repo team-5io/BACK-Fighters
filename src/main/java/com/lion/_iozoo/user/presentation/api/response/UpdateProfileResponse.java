@@ -3,9 +3,11 @@ package com.lion._iozoo.user.presentation.api.response;
 import com.lion._iozoo.user.domain.User;
 import lombok.Builder;
 
+import java.util.UUID;
+
 @Builder
 public record UpdateProfileResponse(
-        Long id,
+        UUID publicId,
         String email,
         String name,
         String timezone,
@@ -13,7 +15,7 @@ public record UpdateProfileResponse(
 ) {
     public static UpdateProfileResponse from(User user) {
         return UpdateProfileResponse.builder()
-                .id(user.getId())
+                .publicId(user.getPublicId())
                 .email(user.getEmail())
                 .name(user.getName())
                 .timezone(user.getTimezone())
