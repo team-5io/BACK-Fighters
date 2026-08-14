@@ -1,5 +1,7 @@
 package com.lion._iozoo.global.security;
 
+import com.lion._iozoo.global.exception.UnauthorizedException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,5 +37,20 @@ public class JwtTokenProvider {
                 .expiration(validity)            // 만료 시간
                 .signWith(key)                   // 서버의 비밀키로 위조 방지
                 .compact();
+    }
+
+    // 토큰을 검증하고 유저 ID(subject)를 추출하는 메서드
+    public Long validateAndGetUserId(String token) {
+        try {
+            String subject = Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload()
+                    .getSubject();
+            return Long.valueOf(subject);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new UnauthorizedException("유효하지 않거나 만료된 토큰입니다.");
+        }
     }
 }

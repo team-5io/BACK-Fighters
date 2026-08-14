@@ -1,31 +1,38 @@
 package com.lion._iozoo.global.presentation;
 
-import lombok.Getter;
+import org.springframework.http.HttpStatus;
 
-@Getter
-public class GlobalApiResponse<T> {
-    private final int status;
-    private final String message;
-    private final T data;
+public record GlobalApiResponse<T>(int status, String code, String message, T data) {
 
-    private GlobalApiResponse(int status, String message, T data) {
-        this.status = status;
-        this.message = message;
-        this.data = data;
+    public static <T> GlobalApiResponse<T> of(HttpStatus httpStatus, String code, String message, T data) {
+        return new GlobalApiResponse<>(httpStatus.value(), code, message, data);
     }
 
-    // 성공 응답 (데이터 있음)
-    public static <T> GlobalApiResponse<T> ok(T data) {
-        return new GlobalApiResponse<>(200, "SUCCESS", data);
+    public static GlobalApiResponse<Void> of(HttpStatus httpStatus, String code, String message) {
+        return of(httpStatus, code, message, null);
     }
 
-    // 성공 응답 (데이터 없음)
-    public static <T> GlobalApiResponse<T> ok() {
-        return new GlobalApiResponse<>(200, "SUCCESS", null);
+    public static <T> GlobalApiResponse<T> ok(String code, String message, T data) {
+        return of(HttpStatus.OK, code, message, data);
     }
 
-    // 생성 성공 응답
-    public static <T> GlobalApiResponse<T> created(T data) {
-        return new GlobalApiResponse<>(201, "CREATED", data);
+    public static GlobalApiResponse<Void> ok(String code, String message) {
+        return of(HttpStatus.OK, code, message);
+    }
+
+    public static <T> GlobalApiResponse<T> ok(ResponseCode code, T data) {
+        return ok(code.getCode(), code.getMessage(), data);
+    }
+
+    public static GlobalApiResponse<Void> ok(ResponseCode code) {
+        return ok(code.getCode(), code.getMessage());
+    }
+
+    public static <T> GlobalApiResponse<T> created(String code, String message, T data) {
+        return of(HttpStatus.CREATED, code, message, data);
+    }
+
+    public static <T> GlobalApiResponse<T> created(ResponseCode code, T data) {
+        return created(code.getCode(), code.getMessage(), data);
     }
 }

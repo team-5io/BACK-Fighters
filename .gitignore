@@ -36,4 +36,7 @@ out/
 ### VS Code ###
 .vscode/
 
-src/main/resources/application.yaml
+### env ###
+.env
+.env.*
+!.env.example

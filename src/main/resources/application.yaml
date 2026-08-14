@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 5iozoo_db로 연결, 한국 시간대 설정 추가 (기본값은 로컬 개발용, .env로 덮어쓰기 가능)
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/5iozoo_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+
+  jpa:
+    hibernate:
+      # Entity 클래스를 바탕으로 DB 테이블을 자동 생성 및 변경
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
+
+jwt:
+  # 토큰을 암호화할 때 쓰는 비밀키 (.env의 JWT_SECRET에서 로드, 기본값 없음 — 필수)
+  secret: ${JWT_SECRET}
+  # 액세스 토큰 만료 시간 (밀리초 단위, 기본값 3600000 = 1시간)
+  access-token-validity-in-milliseconds: ${JWT_ACCESS_TOKEN_VALIDITY_IN_MILLISECONDS:3600000}

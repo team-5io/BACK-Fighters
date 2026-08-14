@@ -1,41 +1,41 @@
-title: "[Standup] 8/"
-labels: ["standup"]
+title: "[General] "
+labels: ["discussion"]
 body:
   - type: markdown
     attributes:
       value: |
-        시간대 안 맞아서 못 모이는 날 이거 하나씩 남겨두면 됨. (Follow-the-Sun 대신 이거 쓰는 거)
+        개발 관련 주제를 자유롭게 논의하는 공간입니다.
 
-  - type: dropdown
-    id: part
+  - type: input
+    id: topic
     attributes:
-      label: 파트
-      options:
-        - AI (김민섭)
-        - FE (김성민)
-        - BE (김준한·김재원)
-        - 디자인 (고나영)
+      label: 토론 주제
+      description: 무엇에 대해 이야기하고 싶은지 한 줄로 적어주세요.
+      placeholder: 예) 우리 프로젝트에서 JWT와 세션 중 어떤 인증 방식이 더 적합할까요?
     validations:
       required: true
 
   - type: textarea
-    id: done
+    id: background
     attributes:
-      label: 오늘 한 것
+      label: 배경
+      description: 왜 이 주제를 논의하려는지 설명해주세요.
+      placeholder: |
+        예)
+        - 현재 인증 구조를 결정해야 합니다.
+        - 운영 편의성과 보안을 함께 고민하고 있습니다.
     validations:
       required: true
 
   - type: textarea
-    id: next
+    id: discussion_points
     attributes:
-      label: 다음에 할 것 / 다음 사람이 이어받을 부분
+      label: 같이 이야기하고 싶은 포인트
+      description: 특히 의견을 듣고 싶은 부분을 적어주세요.
+      placeholder: |
+        예)
+        - 장단점 비교
+        - 실제 운영 시 주의점
+        - 다른 대안이 있는지
     validations:
-      required: false
-
-  - type: textarea
-    id: blocked
-    attributes:
-      label: 막혀있는 것
-      description: 없으면 비워두세요
-    validations:
-      required: false
+      required: true
