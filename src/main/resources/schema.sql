@@ -8,6 +8,7 @@
 
 CREATE TABLE IF NOT EXISTS users (
     id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    public_id   CHAR(36)     NOT NULL COMMENT '외부(AI 서버/프론트) 노출용 ID, 내부 PK(id)는 그대로 유지',
     email       VARCHAR(255) NOT NULL,
     password    VARCHAR(255) NOT NULL COMMENT 'BCrypt 인코딩된 비밀번호',
     name        VARCHAR(100) NOT NULL,
@@ -15,7 +16,8 @@ CREATE TABLE IF NOT EXISTS users (
     language    VARCHAR(10)  NULL COMMENT '선호 언어, 예: ko, en, vi',
     created_at  DATETIME     NOT NULL,
     updated_at  DATETIME     NOT NULL,
-    UNIQUE KEY uk_users_email (email)
+    UNIQUE KEY uk_users_email (email),
+    UNIQUE KEY uk_users_public_id (public_id)
 ) ENGINE=InnoDB COMMENT '회원';
 
 CREATE TABLE IF NOT EXISTS teams (
