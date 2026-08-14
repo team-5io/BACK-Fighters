@@ -1,7 +1,7 @@
 package com.lion._iozoo.user.presentation.api;
 
-import com.lion._iozoo.user.application.UserService;
 import com.lion._iozoo.user.application.command.UpdateProfileCommand;
+import com.lion._iozoo.user.application.usecase.UpdateProfileUseCase;
 import com.lion._iozoo.user.domain.User;
 import com.lion._iozoo.user.presentation.api.common.UserResponseCode;
 import com.lion._iozoo.user.presentation.api.request.UpdateProfileRequest;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserService userService;
+    private final UpdateProfileUseCase updateProfileUseCase;
 
     @PatchMapping("/me")
     public GlobalApiResponse<UpdateProfileResponse> updateProfile(
@@ -31,7 +31,7 @@ public class UserController {
                 request.language()
         );
 
-        User updatedUser = userService.updateProfile(authUser.userId(), command);
+        User updatedUser = updateProfileUseCase.updateProfile(authUser.userId(), command);
 
         return GlobalApiResponse.ok(UserResponseCode.PROFILE_UPDATED, UpdateProfileResponse.from(updatedUser));
     }
