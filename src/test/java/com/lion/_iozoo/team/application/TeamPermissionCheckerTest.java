@@ -53,4 +53,20 @@ class TeamPermissionCheckerTest {
 
         assertThatThrownBy(() -> sut.requireAdmin(1L, 99L)).isInstanceOf(ForbiddenException.class);
     }
+
+    @Test
+    void 팀원이면_requireMember_통과한다() {
+        sut = new TeamPermissionChecker(teamMemberRepository);
+        when(teamMemberRepository.existsByTeamIdAndUserId(1L, 11L)).thenReturn(true);
+
+        assertThatCode(() -> sut.requireMember(1L, 11L)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void 팀_소속이_아니면_requireMember_ForbiddenException() {
+        sut = new TeamPermissionChecker(teamMemberRepository);
+        when(teamMemberRepository.existsByTeamIdAndUserId(1L, 99L)).thenReturn(false);
+
+        assertThatThrownBy(() -> sut.requireMember(1L, 99L)).isInstanceOf(ForbiddenException.class);
+    }
 }
