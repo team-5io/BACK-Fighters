@@ -58,12 +58,33 @@ infrastructure → application 또는 domain
 | domain | 도메인 모델, Aggregate, 상태 변경, 비즈니스 규칙, 도메인 예외 | Spring, JPA, HTTP, 외부 API 의존 |
 | infrastructure / adapter-out | JPA, DB, 외부 API, 메시징, 파일 저장소, Port 구현 | Presentation 책임, 도메인 규칙 판단 |
 
+## UseCase와 Service
+
+- 오퍼레이션 하나당 `application.usecase` 하위에 `<Operation>UseCase` 인터페이스를 두고, `application.service` 하위의 `<Operation>Service`가 이를 구현한다.
+- Controller는 구현체(`<Operation>Service`)가 아니라 `<Operation>UseCase` 인터페이스에만 의존한다.
+- 오퍼레이션 하나가 여러 단계(예: 로그인 인증 + 토큰 발급)로 이뤄지면, 그 조합도 해당 UseCase 구현체 안에서 끝내고 Controller가 여러 Service를 순서대로 호출하지 않는다.
+- 조회 전용 UseCase는 `application.query` 하위의 `<Domain>QueryUseCase`로 분리할 수 있다. Query는 상태를 변경하지 않는다.
+
+```text
+user/application/
+├─ usecase/
+│  ├─ SignupUseCase.java
+│  ├─ LoginUseCase.java
+│  ├─ LogoutUseCase.java
+│  └─ UpdateProfileUseCase.java
+└─ service/
+   ├─ SignupService.java   (implements SignupUseCase)
+   ├─ LoginService.java    (implements LoginUseCase)
+   ├─ LogoutService.java   (implements LogoutUseCase)
+   └─ UpdateProfileService.java (implements UpdateProfileUseCase)
+```
+
 ## Command, Query와 API DTO
 
-- 상태를 변경하는 Application Service는 `<Domain>Service`로 두고 Command를 입력으로 사용한다.
-- 조회 전용 Application Service는 `application.query` 하위의 `<Domain>QueryService`로 분리한다. Query Service는 상태를 변경하지 않는다.
+- Command는 `application.command`에 둔다. UseCase의 입력으로 사용한다.
+- 여러 값을 함께 반환해야 하면 `application.result`에 `<Operation>Result`를 둔다(예: `LoginResult(User user, String accessToken)`).
 - Request와 Response는 HTTP API 계약이므로 `presentation.api.request`, `presentation.api.response`에 둔다.
-- Controller는 Request를 Command로 변환해 상태 변경 Service를 호출한다.
+- Controller는 Request를 Command로 변환해 UseCase를 호출하고, UseCase의 반환값(도메인 객체 또는 Result)을 Response로 변환한다.
 - Application과 Domain은 Presentation의 Request, Response, Swagger 어노테이션을 직접 참조하지 않는다.
 
 ## 인증과 인가
