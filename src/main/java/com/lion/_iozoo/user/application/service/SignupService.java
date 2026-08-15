@@ -11,6 +11,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class SignupService implements SignupUseCase {
@@ -27,8 +29,9 @@ public class SignupService implements SignupUseCase {
             throw new EmailDuplicateException();
         }
 
-        // 2. 도메인 객체 생성 (비밀번호는 인코딩해서 저장)
+        // 2. 도메인 객체 생성 (비밀번호는 인코딩해서 저장, publicId는 외부 노출용으로 가입 시 발급)
         User newUser = User.builder()
+                .publicId(UUID.randomUUID())
                 .email(command.email())
                 .password(passwordEncoder.encode(command.password()))
                 .name(command.name())
