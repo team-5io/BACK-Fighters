@@ -6,6 +6,7 @@ import com.lion._iozoo.team.application.command.CreateTeamCommand;
 import com.lion._iozoo.team.application.command.InviteTeamMemberCommand;
 import com.lion._iozoo.team.application.usecase.CreateTeamUseCase;
 import com.lion._iozoo.team.application.usecase.InviteTeamMemberUseCase;
+import com.lion._iozoo.team.application.usecase.RemoveTeamMemberUseCase;
 import com.lion._iozoo.team.infrastructure.persistence.TeamEntity;
 import com.lion._iozoo.team.infrastructure.persistence.TeamMemberEntity;
 import com.lion._iozoo.team.presentation.api.common.TeamResponseCode;
@@ -16,6 +17,7 @@ import com.lion._iozoo.team.presentation.api.response.TeamResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -29,6 +31,7 @@ public class TeamController {
 
     private final CreateTeamUseCase createTeamUseCase;
     private final InviteTeamMemberUseCase inviteTeamMemberUseCase;
+    private final RemoveTeamMemberUseCase removeTeamMemberUseCase;
 
     @PostMapping
     public GlobalApiResponse<TeamResponse> createTeam(
@@ -51,5 +54,16 @@ public class TeamController {
         TeamMemberEntity teamMember = inviteTeamMemberUseCase.invite(teamId, authUser.userId(), command);
 
         return GlobalApiResponse.created(TeamResponseCode.TEAM_MEMBER_INVITED, TeamMemberResponse.from(teamMember));
+    }
+
+    @DeleteMapping("/{teamId}/members/{memberId}")
+    public GlobalApiResponse<Void> removeTeamMember(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long teamId,
+            @PathVariable Long memberId) {
+
+        removeTeamMemberUseCase.remove(teamId, authUser.userId(), memberId);
+
+        return GlobalApiResponse.ok(TeamResponseCode.TEAM_MEMBER_REMOVED);
     }
 }
