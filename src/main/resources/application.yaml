@@ -8,13 +8,18 @@ spring:
 
   jpa:
     hibernate:
-      # Entity 클래스를 바탕으로 DB 테이블을 자동 생성 및 변경
-      ddl-auto: update
+      # 스키마는 schema.sql이 관리, Hibernate는 자동 생성/변경하지 않음
+      ddl-auto: none
     show-sql: true
     properties:
       hibernate:
         format_sql: true
         use_sql_comments: true
+
+  sql:
+    init:
+      # schema.sql을 앱 기동 시마다 실행 (MySQL 등 비-임베디드 DB는 always로 명시해야 실행됨)
+      mode: always
 
 
 jwt:
