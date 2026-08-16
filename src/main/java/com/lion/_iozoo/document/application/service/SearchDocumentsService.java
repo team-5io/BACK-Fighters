@@ -5,11 +5,13 @@ import com.lion._iozoo.document.application.usecase.SearchDocumentsUseCase;
 import com.lion._iozoo.document.domain.Document;
 import com.lion._iozoo.team.application.TeamPermissionChecker;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SearchDocumentsService implements SearchDocumentsUseCase {
@@ -20,8 +22,20 @@ public class SearchDocumentsService implements SearchDocumentsUseCase {
     @Override
     @Transactional(readOnly = true)
     public Page<Document> search(Long userId, Long teamId, String keyword, Pageable pageable) {
-        teamPermissionChecker.requireMember(teamId, userId);
+        log.info("event=document_search_시작 userId={}, teamId={}", userId, teamId);
 
-        return loadDocumentPort.searchByKeyword(teamId, userId, keyword, pageable);
+        try {
+            teamPermissionChecker.requireMember(teamId, userId);
+
+            Page<Document> result = loadDocumentPort.searchByKeyword(teamId, userId, keyword, pageable);
+
+            log.info("event=document_search_완료 userId={}, teamId={}, count={}",
+                    userId, teamId, result.getNumberOfElements());
+            return result;
+        } catch (RuntimeException e) {
+            log.warn("event=document_search_실패 userId={}, teamId={}, reason={}",
+                    userId, teamId, e.getMessage(), e);
+            throw e;
+        }
     }
 }
