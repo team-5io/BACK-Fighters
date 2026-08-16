@@ -1,0 +1,18 @@
+package com.lion._iozoo.document.presentation.api.common;
+
+import com.lion._iozoo.global.presentation.ResponseCode;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@Getter
+@RequiredArgsConstructor
+public enum DocumentResponseCode implements ResponseCode {
+    DOCUMENT_CREATED("DOCUMENT_201_1", "문서가 생성되었습니다."),
+    DOCUMENT_UPDATED("DOCUMENT_200_1", "문서가 수정되었습니다."),
+    DOCUMENT_DELETED("DOCUMENT_200_2", "문서가 삭제되었습니다."),
+    DOCUMENTS_FETCHED("DOCUMENT_200_3", "문서 목록을 조회했습니다."),
+    DOCUMENTS_SEARCHED("DOCUMENT_200_4", "문서 검색 결과를 조회했습니다.");
+
+    private final String code;
+    private final String message;
+}
