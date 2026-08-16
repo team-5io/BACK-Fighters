@@ -4,9 +4,11 @@ import com.lion._iozoo.docpr.application.command.ApproveDocPrCommand;
 import com.lion._iozoo.docpr.application.command.CreateDocPrCommand;
 import com.lion._iozoo.docpr.application.command.RejectDocPrCommand;
 import com.lion._iozoo.docpr.application.command.ResubmitDocPrCommand;
+import com.lion._iozoo.docpr.application.result.MergeCheckResult;
 import com.lion._iozoo.docpr.application.usecase.ApproveDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.CreateDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrUseCase;
+import com.lion._iozoo.docpr.application.usecase.MergeCheckDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.RejectDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.ResubmitDocPrUseCase;
 import com.lion._iozoo.docpr.domain.DocPr;
@@ -15,6 +17,7 @@ import com.lion._iozoo.docpr.presentation.api.request.CreateDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.request.RejectDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.request.ResubmitDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.response.DocPrResponse;
+import com.lion._iozoo.docpr.presentation.api.response.MergeCheckResponse;
 import com.lion._iozoo.global.presentation.GlobalApiResponse;
 import com.lion._iozoo.global.security.AuthUser;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,6 +43,7 @@ public class DocPrController {
     private final RejectDocPrUseCase rejectDocPrUseCase;
     private final ApproveDocPrUseCase approveDocPrUseCase;
     private final ResubmitDocPrUseCase resubmitDocPrUseCase;
+    private final MergeCheckDocPrUseCase mergeCheckDocPrUseCase;
 
     @Operation(summary = "초안 → Doc PR 전환", description = "문서 작성자(R)가 초안을 Doc PR로 전환하고 승인권자(A)를 지정한다.")
     @PostMapping("/documents/{documentId}/doc-prs")
@@ -109,5 +113,16 @@ public class DocPrController {
         DocPr docPr = resubmitDocPrUseCase.resubmit(authUser.userId(), command);
 
         return GlobalApiResponse.ok(DocPrResponseCode.DOC_PR_RESUBMITTED, DocPrResponse.from(docPr));
+    }
+
+    @Operation(summary = "Merge 가능 여부 확인", description = "승인권자(A)가 Doc PR을 병합해도 되는지 미리 확인한다.")
+    @GetMapping("/doc-prs/{prId}/merge-check")
+    public GlobalApiResponse<MergeCheckResponse> checkMergeable(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long prId) {
+
+        MergeCheckResult result = mergeCheckDocPrUseCase.checkMergeable(authUser.userId(), prId);
+
+        return GlobalApiResponse.ok(DocPrResponseCode.DOC_PR_MERGE_CHECKED, MergeCheckResponse.from(result));
     }
 }
