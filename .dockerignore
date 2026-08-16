@@ -1,0 +1,10 @@
+.git
+.gradle
+build
+out
+.idea
+*.iml
+.claude
+*.md
+Dockerrun.aws.json
+deploy.zip
