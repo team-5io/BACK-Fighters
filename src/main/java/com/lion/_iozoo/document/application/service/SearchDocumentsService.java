@@ -22,6 +22,6 @@ public class SearchDocumentsService implements SearchDocumentsUseCase {
     public Page<Document> search(Long userId, Long teamId, String keyword, Pageable pageable) {
         teamPermissionChecker.requireMember(teamId, userId);
 
-        return loadDocumentPort.searchByKeyword(teamId, keyword, pageable);
+        return loadDocumentPort.searchByKeyword(teamId, userId, keyword, pageable);
     }
 }

@@ -5,6 +5,7 @@ import com.lion._iozoo.document.application.port.out.LoadDocumentPort;
 import com.lion._iozoo.document.application.port.out.SaveDocumentPort;
 import com.lion._iozoo.document.application.usecase.UpdateDocumentUseCase;
 import com.lion._iozoo.document.domain.Document;
+import com.lion._iozoo.document.domain.exception.DocumentAccessDeniedException;
 import com.lion._iozoo.document.domain.exception.DocumentNotDraftException;
 import com.lion._iozoo.document.domain.exception.DocumentNotFoundException;
 import com.lion._iozoo.team.application.TeamPermissionChecker;
@@ -27,6 +28,11 @@ public class UpdateDocumentService implements UpdateDocumentUseCase {
                 .orElseThrow(() -> new DocumentNotFoundException(documentId));
 
         teamPermissionChecker.requireMember(document.getTeamId(), userId);
+
+        // 문서 편집은 작성자(R)만 가능 (Doc PR API 명세서 "문서 편집" 사용 계층 기준)
+        if (!document.getAuthorId().equals(userId)) {
+            throw new DocumentAccessDeniedException(documentId);
+        }
 
         if (!document.isDraft()) {
             throw new DocumentNotDraftException(documentId);

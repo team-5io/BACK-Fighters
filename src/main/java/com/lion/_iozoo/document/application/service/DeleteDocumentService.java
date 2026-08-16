@@ -26,6 +26,11 @@ public class DeleteDocumentService implements DeleteDocumentUseCase {
 
         teamPermissionChecker.requireMember(document.getTeamId(), userId);
 
+        // 문서 삭제·보관은 작성자(R) 또는 팀 관리자만 가능 (Doc PR API 명세서 "문서 삭제·보관" 사용 계층 기준)
+        if (!document.getAuthorId().equals(userId)) {
+            teamPermissionChecker.requireAdmin(document.getTeamId(), userId);
+        }
+
         deleteDocumentPort.deleteById(documentId);
     }
 }

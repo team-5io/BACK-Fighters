@@ -22,6 +22,6 @@ public class ListDocumentsService implements ListDocumentsUseCase {
     public Page<Document> list(Long userId, Long teamId, Pageable pageable) {
         teamPermissionChecker.requireMember(teamId, userId);
 
-        return loadDocumentPort.loadByTeamId(teamId, pageable);
+        return loadDocumentPort.loadByTeamId(teamId, userId, pageable);
     }
 }

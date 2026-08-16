@@ -30,6 +30,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -92,6 +93,7 @@ class DocumentControllerTest {
 
         mockMvc.perform(post("/documents")
                         .with(authentication(authToken()))
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -119,6 +121,7 @@ class DocumentControllerTest {
 
         mockMvc.perform(patch("/documents/100")
                         .with(authentication(authToken()))
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -133,7 +136,8 @@ class DocumentControllerTest {
         willDoNothing().given(deleteDocumentUseCase).delete(USER_ID, 100L);
 
         mockMvc.perform(delete("/documents/100")
-                        .with(authentication(authToken())))
+                        .with(authentication(authToken()))
+                        .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("DOCUMENT_200_2"))
                 .andExpect(jsonPath("$.message").value("문서가 삭제되었습니다."));

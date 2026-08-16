@@ -8,6 +8,7 @@ import java.util.Optional;
 
 public interface LoadDocumentPort {
     Optional<Document> loadById(Long documentId);
-    Page<Document> loadByTeamId(Long teamId, Pageable pageable);
-    Page<Document> searchByKeyword(Long teamId, String keyword, Pageable pageable);
+    // restricted 문서는 작성자만 목록/검색 결과에서 볼 수 있도록 userId로 필터링한다.
+    Page<Document> loadByTeamId(Long teamId, Long userId, Pageable pageable);
+    Page<Document> searchByKeyword(Long teamId, Long userId, String keyword, Pageable pageable);
 }
