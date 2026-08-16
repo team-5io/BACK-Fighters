@@ -1,12 +1,17 @@
 package com.lion._iozoo.document.presentation.api;
 
 import com.lion._iozoo.document.application.command.CreateDocumentCommand;
+import com.lion._iozoo.document.application.command.RaciAssignmentCommand;
+import com.lion._iozoo.document.application.command.SetDocumentRaciCommand;
 import com.lion._iozoo.document.application.command.UpdateDocumentCommand;
+import com.lion._iozoo.document.application.result.DocumentRaciEntry;
 import com.lion._iozoo.document.application.usecase.*;
 import com.lion._iozoo.document.domain.Document;
 import com.lion._iozoo.document.presentation.api.common.DocumentResponseCode;
 import com.lion._iozoo.document.presentation.api.request.CreateDocumentRequest;
+import com.lion._iozoo.document.presentation.api.request.SetDocumentRaciRequest;
 import com.lion._iozoo.document.presentation.api.request.UpdateDocumentRequest;
+import com.lion._iozoo.document.presentation.api.response.DocumentRaciResponse;
 import com.lion._iozoo.document.presentation.api.response.DocumentResponse;
 import com.lion._iozoo.global.presentation.GlobalApiResponse;
 import com.lion._iozoo.global.security.AuthUser;
@@ -20,6 +25,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tag(name = "Document", description = "문서 CRUD API")
 @RestController
 @RequestMapping("/documents")
@@ -31,6 +38,7 @@ public class DocumentController {
     private final DeleteDocumentUseCase deleteDocumentUseCase;
     private final ListDocumentsUseCase listDocumentsUseCase;
     private final SearchDocumentsUseCase searchDocumentsUseCase;
+    private final SetDocumentRaciUseCase setDocumentRaciUseCase;
 
     @Operation(summary = "문서 생성", description = "팀 공간에 DRAFT 상태의 새 문서를 생성한다.")
     @PostMapping
@@ -102,5 +110,28 @@ public class DocumentController {
                 .map(DocumentResponse::from);
 
         return GlobalApiResponse.ok(DocumentResponseCode.DOCUMENTS_SEARCHED, documents);
+    }
+
+    @Operation(summary = "RACI 역할 지정/변경", description = "팀 관리자가 문서의 RACI(R/A/C/I) 역할과 참여자를 지정·변경한다. 기존 배정을 전체 교체한다.")
+    @PutMapping("/{documentId}/raci")
+    public GlobalApiResponse<List<DocumentRaciResponse>> setDocumentRaci(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long documentId,
+            @RequestBody @Valid SetDocumentRaciRequest request) {
+
+        SetDocumentRaciCommand command = new SetDocumentRaciCommand(
+                documentId,
+                request.assignments().stream()
+                        .map(a -> new RaciAssignmentCommand(a.userId(), a.role()))
+                        .toList()
+        );
+
+        List<DocumentRaciEntry> entries = setDocumentRaciUseCase.setRaci(authUser.userId(), command);
+
+        List<DocumentRaciResponse> response = entries.stream()
+                .map(DocumentRaciResponse::from)
+                .toList();
+
+        return GlobalApiResponse.ok(DocumentResponseCode.DOCUMENT_RACI_SET, response);
     }
 }

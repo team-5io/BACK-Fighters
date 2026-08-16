@@ -1,10 +1,14 @@
 package com.lion._iozoo.document.presentation.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lion._iozoo.document.application.result.DocumentRaciEntry;
 import com.lion._iozoo.document.application.usecase.*;
 import com.lion._iozoo.document.domain.Document;
 import com.lion._iozoo.document.domain.DocumentStatus;
+import com.lion._iozoo.document.domain.RaciRole;
 import com.lion._iozoo.document.presentation.api.request.CreateDocumentRequest;
+import com.lion._iozoo.document.presentation.api.request.RaciAssignmentRequest;
+import com.lion._iozoo.document.presentation.api.request.SetDocumentRaciRequest;
 import com.lion._iozoo.document.presentation.api.request.UpdateDocumentRequest;
 import com.lion._iozoo.global.security.AuthUser;
 import com.lion._iozoo.global.security.JwtAuthenticationFilter;
@@ -57,6 +61,9 @@ class DocumentControllerTest {
 
     @MockBean
     private SearchDocumentsUseCase searchDocumentsUseCase;
+
+    @MockBean
+    private SetDocumentRaciUseCase setDocumentRaciUseCase;
 
     @MockBean
     private JwtTokenProvider jwtTokenProvider;
@@ -179,5 +186,27 @@ class DocumentControllerTest {
                 .andExpect(jsonPath("$.code").value("DOCUMENT_200_4"))
                 .andExpect(jsonPath("$.data.content[0].title").value("테스트 문서"))
                 .andExpect(jsonPath("$.data.totalElements").value(1));
+    }
+
+    @Test
+    @DisplayName("PUT /documents/{documentId}/raci - RACI 지정 성공")
+    void setDocumentRaci_success() throws Exception {
+        given(setDocumentRaciUseCase.setRaci(eq(USER_ID), any())).willReturn(List.of(
+                new DocumentRaciEntry(10L, RaciRole.R, USER_ID, java.time.LocalDateTime.now())
+        ));
+
+        SetDocumentRaciRequest request = new SetDocumentRaciRequest(
+                List.of(new RaciAssignmentRequest(10L, RaciRole.R))
+        );
+
+        mockMvc.perform(put("/documents/100/raci")
+                        .with(authentication(authToken()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("DOCUMENT_200_5"))
+                .andExpect(jsonPath("$.data[0].userId").value(10L))
+                .andExpect(jsonPath("$.data[0].role").value("R"));
     }
 }
