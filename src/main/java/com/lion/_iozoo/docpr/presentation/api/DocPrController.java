@@ -1,11 +1,14 @@
 package com.lion._iozoo.docpr.presentation.api;
 
 import com.lion._iozoo.docpr.application.command.CreateDocPrCommand;
+import com.lion._iozoo.docpr.application.command.RejectDocPrCommand;
 import com.lion._iozoo.docpr.application.usecase.CreateDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrUseCase;
+import com.lion._iozoo.docpr.application.usecase.RejectDocPrUseCase;
 import com.lion._iozoo.docpr.domain.DocPr;
 import com.lion._iozoo.docpr.presentation.api.common.DocPrResponseCode;
 import com.lion._iozoo.docpr.presentation.api.request.CreateDocPrRequest;
+import com.lion._iozoo.docpr.presentation.api.request.RejectDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.response.DocPrResponse;
 import com.lion._iozoo.global.presentation.GlobalApiResponse;
 import com.lion._iozoo.global.security.AuthUser;
@@ -29,6 +32,7 @@ public class DocPrController {
 
     private final CreateDocPrUseCase createDocPrUseCase;
     private final GetDocPrUseCase getDocPrUseCase;
+    private final RejectDocPrUseCase rejectDocPrUseCase;
 
     @Operation(summary = "초안 → Doc PR 전환", description = "문서 작성자(R)가 초안을 Doc PR로 전환하고 승인권자(A)를 지정한다.")
     @PostMapping("/documents/{documentId}/doc-prs")
@@ -57,5 +61,19 @@ public class DocPrController {
         DocPr docPr = getDocPrUseCase.getById(authUser.userId(), prId);
 
         return GlobalApiResponse.ok(DocPrResponseCode.DOC_PR_FETCHED, DocPrResponse.from(docPr));
+    }
+
+    @Operation(summary = "Doc PR 반려", description = "승인권자(A)가 Doc PR을 반려하고 사유를 기록한다.")
+    @PostMapping("/doc-prs/{prId}/reject")
+    public GlobalApiResponse<DocPrResponse> rejectDocPr(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long prId,
+            @RequestBody @Valid RejectDocPrRequest request) {
+
+        RejectDocPrCommand command = new RejectDocPrCommand(prId, request.reason());
+
+        DocPr docPr = rejectDocPrUseCase.reject(authUser.userId(), command);
+
+        return GlobalApiResponse.ok(DocPrResponseCode.DOC_PR_REJECTED, DocPrResponse.from(docPr));
     }
 }

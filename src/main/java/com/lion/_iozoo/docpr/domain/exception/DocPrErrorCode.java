@@ -12,7 +12,9 @@ public enum DocPrErrorCode implements ErrorCode {
     DOCPR_NOT_FOUND(HttpStatus.NOT_FOUND, "DOCPR_404_2", "Doc PR을 찾을 수 없습니다."),
     DOCPR_NOT_DRAFT(HttpStatus.BAD_REQUEST, "DOCPR_400_1", "초안 상태의 문서만 Doc PR로 전환할 수 있습니다."),
     DOCPR_SELF_APPROVAL_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "DOCPR_400_2", "요청자 본인을 승인권자로 지정할 수 없습니다."),
-    DOCPR_REQUESTER_NOT_AUTHOR(HttpStatus.FORBIDDEN, "DOCPR_403_1", "문서 작성자만 Doc PR로 전환할 수 있습니다.");
+    DOCPR_REQUESTER_NOT_AUTHOR(HttpStatus.FORBIDDEN, "DOCPR_403_1", "문서 작성자만 Doc PR로 전환할 수 있습니다."),
+    DOCPR_NOT_APPROVER(HttpStatus.FORBIDDEN, "DOCPR_403_2", "승인권자만 반려할 수 있습니다."),
+    DOCPR_ALREADY_TERMINAL(HttpStatus.CONFLICT, "DOCPR_409_1", "이미 반려되었거나 병합된 Doc PR입니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

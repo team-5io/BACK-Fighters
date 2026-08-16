@@ -10,7 +10,7 @@ public class DocPr {
     private final Long requesterId;
     private final Long approverId;
     private final String proposedContent;
-    private final DocPrStatus status;
+    private DocPrStatus status;
 
     @Builder
     private DocPr(Long id, Long documentId, Long requesterId, Long approverId,
@@ -21,5 +21,13 @@ public class DocPr {
         this.approverId = approverId;
         this.proposedContent = proposedContent;
         this.status = status;
+    }
+
+    public boolean isTerminal() {
+        return this.status == DocPrStatus.REJECTED || this.status == DocPrStatus.MERGED;
+    }
+
+    public void reject() {
+        this.status = DocPrStatus.REJECTED;
     }
 }
