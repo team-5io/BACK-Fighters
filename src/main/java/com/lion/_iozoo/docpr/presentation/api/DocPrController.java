@@ -5,9 +5,11 @@ import com.lion._iozoo.docpr.application.command.CreateDocPrCommand;
 import com.lion._iozoo.docpr.application.command.MergeDocPrCommand;
 import com.lion._iozoo.docpr.application.command.RejectDocPrCommand;
 import com.lion._iozoo.docpr.application.command.ResubmitDocPrCommand;
+import com.lion._iozoo.docpr.application.result.DocPrHistoryEntry;
 import com.lion._iozoo.docpr.application.result.MergeCheckResult;
 import com.lion._iozoo.docpr.application.usecase.ApproveDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.CreateDocPrUseCase;
+import com.lion._iozoo.docpr.application.usecase.GetDocPrHistoryUseCase;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.MergeCheckDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.MergeDocPrUseCase;
@@ -18,6 +20,7 @@ import com.lion._iozoo.docpr.presentation.api.common.DocPrResponseCode;
 import com.lion._iozoo.docpr.presentation.api.request.CreateDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.request.RejectDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.request.ResubmitDocPrRequest;
+import com.lion._iozoo.docpr.presentation.api.response.DocPrHistoryResponse;
 import com.lion._iozoo.docpr.presentation.api.response.DocPrResponse;
 import com.lion._iozoo.docpr.presentation.api.response.MergeCheckResponse;
 import com.lion._iozoo.global.presentation.GlobalApiResponse;
@@ -33,6 +36,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 // 클래스 레벨 @RequestMapping 없음: 전환(POST)은 /documents/{documentId}/doc-prs 아래 중첩 리소스지만,
 // 생성 이후의 Doc PR 자체 조회·상태전이는 /doc-prs/{prId}로 독립된 리소스라 경로 형태가 서로 다름.
 @Tag(name = "Doc PR", description = "Doc PR 워크플로우 API")
@@ -47,6 +52,7 @@ public class DocPrController {
     private final ResubmitDocPrUseCase resubmitDocPrUseCase;
     private final MergeCheckDocPrUseCase mergeCheckDocPrUseCase;
     private final MergeDocPrUseCase mergeDocPrUseCase;
+    private final GetDocPrHistoryUseCase getDocPrHistoryUseCase;
 
     @Operation(summary = "초안 → Doc PR 전환", description = "문서 작성자(R)가 초안을 Doc PR로 전환하고 승인권자(A)를 지정한다.")
     @PostMapping("/documents/{documentId}/doc-prs")
@@ -140,5 +146,19 @@ public class DocPrController {
         DocPr docPr = mergeDocPrUseCase.merge(authUser.userId(), command);
 
         return GlobalApiResponse.ok(DocPrResponseCode.DOC_PR_MERGED, DocPrResponse.from(docPr));
+    }
+
+    @Operation(summary = "Doc PR 이력 조회", description = "상태 전이별 수행자·시각·사유 이력을 시간순으로 조회한다.")
+    @GetMapping("/doc-prs/{prId}/history")
+    public GlobalApiResponse<List<DocPrHistoryResponse>> getDocPrHistory(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long prId) {
+
+        List<DocPrHistoryResponse> history = getDocPrHistoryUseCase.getHistory(authUser.userId(), prId)
+                .stream()
+                .map(DocPrHistoryResponse::from)
+                .toList();
+
+        return GlobalApiResponse.ok(DocPrResponseCode.DOC_PR_HISTORY_FETCHED, history);
     }
 }
