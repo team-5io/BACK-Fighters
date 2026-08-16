@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "doc_prs")
 @Getter
@@ -34,14 +36,18 @@ public class DocPrEntity extends BaseTimeEntity {
     @Column(nullable = false)
     private DocPrStatus status;
 
+    @Column(name = "merged_at")
+    private LocalDateTime mergedAt;
+
     @Builder
     private DocPrEntity(Long id, Long documentId, Long requesterId, Long approverId,
-                        String proposedContent, DocPrStatus status) {
+                        String proposedContent, DocPrStatus status, LocalDateTime mergedAt) {
         this.id = id;
         this.documentId = documentId;
         this.requesterId = requesterId;
         this.approverId = approverId;
         this.proposedContent = proposedContent;
         this.status = status;
+        this.mergedAt = mergedAt;
     }
 }

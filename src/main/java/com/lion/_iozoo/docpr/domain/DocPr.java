@@ -3,6 +3,8 @@ package com.lion._iozoo.docpr.domain;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
+
 @Getter
 public class DocPr {
     private final Long id;
@@ -11,16 +13,18 @@ public class DocPr {
     private final Long approverId;
     private String proposedContent;
     private DocPrStatus status;
+    private LocalDateTime mergedAt;
 
     @Builder
     private DocPr(Long id, Long documentId, Long requesterId, Long approverId,
-                  String proposedContent, DocPrStatus status) {
+                  String proposedContent, DocPrStatus status, LocalDateTime mergedAt) {
         this.id = id;
         this.documentId = documentId;
         this.requesterId = requesterId;
         this.approverId = approverId;
         this.proposedContent = proposedContent;
         this.status = status;
+        this.mergedAt = mergedAt;
     }
 
     public boolean isTerminal() {
@@ -44,5 +48,14 @@ public class DocPr {
     public void resubmit(String proposedContent) {
         this.proposedContent = proposedContent;
         this.status = DocPrStatus.RESUBMITTED;
+    }
+
+    public boolean isApproved() {
+        return this.status == DocPrStatus.APPROVED;
+    }
+
+    public void merge(LocalDateTime mergedAt) {
+        this.status = DocPrStatus.MERGED;
+        this.mergedAt = mergedAt;
     }
 }

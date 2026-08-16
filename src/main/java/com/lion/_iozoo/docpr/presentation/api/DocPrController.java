@@ -2,6 +2,7 @@ package com.lion._iozoo.docpr.presentation.api;
 
 import com.lion._iozoo.docpr.application.command.ApproveDocPrCommand;
 import com.lion._iozoo.docpr.application.command.CreateDocPrCommand;
+import com.lion._iozoo.docpr.application.command.MergeDocPrCommand;
 import com.lion._iozoo.docpr.application.command.RejectDocPrCommand;
 import com.lion._iozoo.docpr.application.command.ResubmitDocPrCommand;
 import com.lion._iozoo.docpr.application.result.MergeCheckResult;
@@ -9,6 +10,7 @@ import com.lion._iozoo.docpr.application.usecase.ApproveDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.CreateDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.MergeCheckDocPrUseCase;
+import com.lion._iozoo.docpr.application.usecase.MergeDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.RejectDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.ResubmitDocPrUseCase;
 import com.lion._iozoo.docpr.domain.DocPr;
@@ -44,6 +46,7 @@ public class DocPrController {
     private final ApproveDocPrUseCase approveDocPrUseCase;
     private final ResubmitDocPrUseCase resubmitDocPrUseCase;
     private final MergeCheckDocPrUseCase mergeCheckDocPrUseCase;
+    private final MergeDocPrUseCase mergeDocPrUseCase;
 
     @Operation(summary = "초안 → Doc PR 전환", description = "문서 작성자(R)가 초안을 Doc PR로 전환하고 승인권자(A)를 지정한다.")
     @PostMapping("/documents/{documentId}/doc-prs")
@@ -124,5 +127,18 @@ public class DocPrController {
         MergeCheckResult result = mergeCheckDocPrUseCase.checkMergeable(authUser.userId(), prId);
 
         return GlobalApiResponse.ok(DocPrResponseCode.DOC_PR_MERGE_CHECKED, MergeCheckResponse.from(result));
+    }
+
+    @Operation(summary = "Merge 확정", description = "승인권자(A)가 승인된 Doc PR을 공식 문서로 병합 확정한다.")
+    @PostMapping("/doc-prs/{prId}/merge")
+    public GlobalApiResponse<DocPrResponse> mergeDocPr(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long prId) {
+
+        MergeDocPrCommand command = new MergeDocPrCommand(prId);
+
+        DocPr docPr = mergeDocPrUseCase.merge(authUser.userId(), command);
+
+        return GlobalApiResponse.ok(DocPrResponseCode.DOC_PR_MERGED, DocPrResponse.from(docPr));
     }
 }

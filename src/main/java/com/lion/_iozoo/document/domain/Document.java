@@ -33,4 +33,8 @@ public class Document {
         this.title = title;
         this.content = content;
     }
+
+    public void markOfficial() {
+        this.status = DocumentStatus.OFFICIAL;
+    }
 }
