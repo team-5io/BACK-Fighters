@@ -7,9 +7,11 @@ import com.lion._iozoo.document.domain.Document;
 import com.lion._iozoo.document.domain.DocumentStatus;
 import com.lion._iozoo.team.application.TeamPermissionChecker;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CreateDocumentService implements CreateDocumentUseCase {
@@ -20,17 +22,29 @@ public class CreateDocumentService implements CreateDocumentUseCase {
     @Override
     @Transactional
     public Document create(Long userId, CreateDocumentCommand command) {
-        teamPermissionChecker.requireMember(command.teamId(), userId);
+        log.info("event=document_create_시작 userId={}, teamId={}", userId, command.teamId());
 
-        Document document = Document.builder()
-                .teamId(command.teamId())
-                .authorId(userId)
-                .title(command.title())
-                .content(command.content())
-                .status(DocumentStatus.DRAFT)
-                .restricted(false)
-                .build();
+        try {
+            teamPermissionChecker.requireMember(command.teamId(), userId);
 
-        return saveDocumentPort.save(document);
+            Document document = Document.builder()
+                    .teamId(command.teamId())
+                    .authorId(userId)
+                    .title(command.title())
+                    .content(command.content())
+                    .status(DocumentStatus.DRAFT)
+                    .restricted(false)
+                    .build();
+
+            Document saved = saveDocumentPort.save(document);
+
+            log.info("event=document_create_완료 userId={}, teamId={}, documentId={}",
+                    userId, command.teamId(), saved.getId());
+            return saved;
+        } catch (RuntimeException e) {
+            log.warn("event=document_create_실패 userId={}, teamId={}, reason={}",
+                    userId, command.teamId(), e.getMessage(), e);
+            throw e;
+        }
     }
 }

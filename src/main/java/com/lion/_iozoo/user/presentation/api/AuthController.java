@@ -12,6 +12,8 @@ import com.lion._iozoo.user.presentation.api.request.SignupRequest;
 import com.lion._iozoo.user.presentation.api.response.LoginResponse;
 import com.lion._iozoo.user.presentation.api.response.SignupResponse;
 import com.lion._iozoo.global.presentation.GlobalApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,6 +24,7 @@ import com.lion._iozoo.user.presentation.api.request.LogoutRequest;
 import com.lion._iozoo.user.presentation.api.common.UserResponseCode;
 
 
+@Tag(name = "Auth", description = "회원가입/로그인/로그아웃 API")
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -31,6 +34,7 @@ public class AuthController {
     private final LoginUseCase loginUseCase;
     private final LogoutUseCase logoutUseCase;
 
+    @Operation(summary = "회원가입", description = "이메일/비밀번호/이름으로 새 계정을 생성한다.")
     @PostMapping("/signup")
     public GlobalApiResponse<SignupResponse> signup(@RequestBody @Valid SignupRequest request) {
         // 1. HTTP Request 객체를 비즈니스 로직 전용 Command 객체로 변환합니다[cite: 2].
@@ -47,6 +51,7 @@ public class AuthController {
         return GlobalApiResponse.created(UserResponseCode.SIGNUP_SUCCESS, SignupResponse.from(savedUser));
     }
 
+    @Operation(summary = "로그인", description = "이메일/비밀번호로 인증하고 액세스 토큰을 발급한다.")
     @PostMapping("/login")
     public GlobalApiResponse<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
         LoginCommand command = new LoginCommand(request.email(), request.password());
@@ -58,6 +63,7 @@ public class AuthController {
         return GlobalApiResponse.ok(UserResponseCode.LOGIN_SUCCESS, LoginResponse.of(result.user(), result.accessToken()));
     }
 
+    @Operation(summary = "로그아웃", description = "전달된 액세스 토큰을 블랙리스트에 등록해 무효화한다.")
     @PostMapping("/logout")
     public GlobalApiResponse<Void> logout(@RequestBody @Valid LogoutRequest request) {
         logoutUseCase.logout(request.accessToken());

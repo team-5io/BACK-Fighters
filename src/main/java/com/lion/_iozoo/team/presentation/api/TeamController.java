@@ -15,6 +15,8 @@ import com.lion._iozoo.team.presentation.api.request.CreateTeamRequest;
 import com.lion._iozoo.team.presentation.api.request.InviteTeamMemberRequest;
 import com.lion._iozoo.team.presentation.api.response.TeamMemberResponse;
 import com.lion._iozoo.team.presentation.api.response.TeamResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@Tag(name = "Team", description = "팀 생성/팀원 관리 API")
 @RestController
 @RequestMapping("/teams")
 @RequiredArgsConstructor
@@ -38,6 +41,7 @@ public class TeamController {
     private final RemoveTeamMemberUseCase removeTeamMemberUseCase;
     private final ListTeamMembersUseCase listTeamMembersUseCase;
 
+    @Operation(summary = "팀 생성", description = "새 협업 팀 공간을 생성한다. 생성자는 자동으로 ADMIN이 된다.")
     @PostMapping
     public GlobalApiResponse<TeamResponse> createTeam(
             @AuthenticationPrincipal AuthUser authUser,
@@ -49,6 +53,7 @@ public class TeamController {
         return GlobalApiResponse.created(TeamResponseCode.TEAM_CREATED, TeamResponse.from(team));
     }
 
+    @Operation(summary = "팀원 초대", description = "ADMIN이 이미 가입된 유저를 이메일로 팀에 초대해 MEMBER로 등록한다.")
     @PostMapping("/{teamId}/invitations")
     public GlobalApiResponse<TeamMemberResponse> inviteTeamMember(
             @AuthenticationPrincipal AuthUser authUser,
@@ -61,6 +66,7 @@ public class TeamController {
         return GlobalApiResponse.created(TeamResponseCode.TEAM_MEMBER_INVITED, TeamMemberResponse.from(teamMember));
     }
 
+    @Operation(summary = "팀원 추방/탈퇴", description = "ADMIN이 팀원을 추방하거나, 본인이 스스로 탈퇴한다.")
     @DeleteMapping("/{teamId}/members/{memberId}")
     public GlobalApiResponse<Void> removeTeamMember(
             @AuthenticationPrincipal AuthUser authUser,
@@ -72,6 +78,7 @@ public class TeamController {
         return GlobalApiResponse.ok(TeamResponseCode.TEAM_MEMBER_REMOVED);
     }
 
+    @Operation(summary = "팀원 목록 및 역할 조회", description = "팀에 소속된 팀원과 각자의 역할(MEMBER/ADMIN)을 조회한다.")
     @GetMapping("/{teamId}/members")
     public GlobalApiResponse<List<TeamMemberResponse>> listTeamMembers(
             @AuthenticationPrincipal AuthUser authUser,
