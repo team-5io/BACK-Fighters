@@ -3,14 +3,17 @@ package com.lion._iozoo.docpr.presentation.api;
 import com.lion._iozoo.docpr.application.command.ApproveDocPrCommand;
 import com.lion._iozoo.docpr.application.command.CreateDocPrCommand;
 import com.lion._iozoo.docpr.application.command.RejectDocPrCommand;
+import com.lion._iozoo.docpr.application.command.ResubmitDocPrCommand;
 import com.lion._iozoo.docpr.application.usecase.ApproveDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.CreateDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.RejectDocPrUseCase;
+import com.lion._iozoo.docpr.application.usecase.ResubmitDocPrUseCase;
 import com.lion._iozoo.docpr.domain.DocPr;
 import com.lion._iozoo.docpr.presentation.api.common.DocPrResponseCode;
 import com.lion._iozoo.docpr.presentation.api.request.CreateDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.request.RejectDocPrRequest;
+import com.lion._iozoo.docpr.presentation.api.request.ResubmitDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.response.DocPrResponse;
 import com.lion._iozoo.global.presentation.GlobalApiResponse;
 import com.lion._iozoo.global.security.AuthUser;
@@ -36,6 +39,7 @@ public class DocPrController {
     private final GetDocPrUseCase getDocPrUseCase;
     private final RejectDocPrUseCase rejectDocPrUseCase;
     private final ApproveDocPrUseCase approveDocPrUseCase;
+    private final ResubmitDocPrUseCase resubmitDocPrUseCase;
 
     @Operation(summary = "초안 → Doc PR 전환", description = "문서 작성자(R)가 초안을 Doc PR로 전환하고 승인권자(A)를 지정한다.")
     @PostMapping("/documents/{documentId}/doc-prs")
@@ -91,5 +95,19 @@ public class DocPrController {
         DocPr docPr = approveDocPrUseCase.approve(authUser.userId(), command);
 
         return GlobalApiResponse.ok(DocPrResponseCode.DOC_PR_APPROVED, DocPrResponse.from(docPr));
+    }
+
+    @Operation(summary = "재제출", description = "요청자(R)가 반려된 Doc PR을 수정 후 재제출한다.")
+    @PostMapping("/doc-prs/{prId}/resubmit")
+    public GlobalApiResponse<DocPrResponse> resubmitDocPr(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long prId,
+            @RequestBody @Valid ResubmitDocPrRequest request) {
+
+        ResubmitDocPrCommand command = new ResubmitDocPrCommand(prId, request.proposedContent());
+
+        DocPr docPr = resubmitDocPrUseCase.resubmit(authUser.userId(), command);
+
+        return GlobalApiResponse.ok(DocPrResponseCode.DOC_PR_RESUBMITTED, DocPrResponse.from(docPr));
     }
 }
