@@ -1,6 +1,7 @@
 package com.lion._iozoo.docpr.presentation.api;
 
 import com.lion._iozoo.docpr.application.command.ApproveDocPrCommand;
+import com.lion._iozoo.docpr.application.command.ChangeDocPrApproverCommand;
 import com.lion._iozoo.docpr.application.command.CreateDocPrCommand;
 import com.lion._iozoo.docpr.application.command.MergeDocPrCommand;
 import com.lion._iozoo.docpr.application.command.RejectDocPrCommand;
@@ -8,6 +9,7 @@ import com.lion._iozoo.docpr.application.command.ResubmitDocPrCommand;
 import com.lion._iozoo.docpr.application.result.DocPrHistoryEntry;
 import com.lion._iozoo.docpr.application.result.MergeCheckResult;
 import com.lion._iozoo.docpr.application.usecase.ApproveDocPrUseCase;
+import com.lion._iozoo.docpr.application.usecase.ChangeDocPrApproverUseCase;
 import com.lion._iozoo.docpr.application.usecase.CreateDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrHistoryUseCase;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrUseCase;
@@ -17,6 +19,7 @@ import com.lion._iozoo.docpr.application.usecase.RejectDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.ResubmitDocPrUseCase;
 import com.lion._iozoo.docpr.domain.DocPr;
 import com.lion._iozoo.docpr.presentation.api.common.DocPrResponseCode;
+import com.lion._iozoo.docpr.presentation.api.request.ChangeDocPrApproverRequest;
 import com.lion._iozoo.docpr.presentation.api.request.CreateDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.request.RejectDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.request.ResubmitDocPrRequest;
@@ -31,6 +34,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -53,6 +57,7 @@ public class DocPrController {
     private final MergeCheckDocPrUseCase mergeCheckDocPrUseCase;
     private final MergeDocPrUseCase mergeDocPrUseCase;
     private final GetDocPrHistoryUseCase getDocPrHistoryUseCase;
+    private final ChangeDocPrApproverUseCase changeDocPrApproverUseCase;
 
     @Operation(summary = "초안 → Doc PR 전환", description = "문서 작성자(R)가 초안을 Doc PR로 전환하고 승인권자(A)를 지정한다.")
     @PostMapping("/documents/{documentId}/doc-prs")
@@ -160,5 +165,19 @@ public class DocPrController {
                 .toList();
 
         return GlobalApiResponse.ok(DocPrResponseCode.DOC_PR_HISTORY_FETCHED, history);
+    }
+
+    @Operation(summary = "대체 승인권자 지정", description = "팀 관리자가 Doc PR의 승인권자를 교체한다.")
+    @PatchMapping("/doc-prs/{prId}/approver")
+    public GlobalApiResponse<DocPrResponse> changeDocPrApprover(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long prId,
+            @RequestBody @Valid ChangeDocPrApproverRequest request) {
+
+        ChangeDocPrApproverCommand command = new ChangeDocPrApproverCommand(prId, request.newApproverId());
+
+        DocPr docPr = changeDocPrApproverUseCase.changeApprover(authUser.userId(), command);
+
+        return GlobalApiResponse.ok(DocPrResponseCode.DOC_PR_APPROVER_CHANGED, DocPrResponse.from(docPr));
     }
 }
