@@ -5,6 +5,8 @@ import com.lion._iozoo.docpr.domain.DocPrStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
+import java.time.LocalDateTime;
+
 @Builder
 public record DocPrResponse(
         @Schema(description = "Doc PR ID", example = "1")
@@ -23,7 +25,10 @@ public record DocPrResponse(
         String proposedContent,
 
         @Schema(description = "Doc PR 상태", example = "CREATED")
-        DocPrStatus status
+        DocPrStatus status,
+
+        @Schema(description = "병합 확정 시각 (미병합이면 null)", example = "2026-08-16T21:00:00")
+        LocalDateTime mergedAt
 ) {
     public static DocPrResponse from(DocPr docPr) {
         return DocPrResponse.builder()
@@ -33,6 +38,7 @@ public record DocPrResponse(
                 .approverId(docPr.getApproverId())
                 .proposedContent(docPr.getProposedContent())
                 .status(docPr.getStatus())
+                .mergedAt(docPr.getMergedAt())
                 .build();
     }
 }
