@@ -10,7 +10,7 @@ public class DocPr {
     private final Long id;
     private final Long documentId;
     private final Long requesterId;
-    private final Long approverId;
+    private Long approverId;
     private String proposedContent;
     private DocPrStatus status;
     private LocalDateTime mergedAt;
@@ -57,5 +57,9 @@ public class DocPr {
     public void merge(LocalDateTime mergedAt) {
         this.status = DocPrStatus.MERGED;
         this.mergedAt = mergedAt;
+    }
+
+    public void changeApprover(Long newApproverId) {
+        this.approverId = newApproverId;
     }
 }
