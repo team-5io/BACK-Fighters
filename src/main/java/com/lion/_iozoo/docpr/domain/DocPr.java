@@ -24,10 +24,16 @@ public class DocPr {
     }
 
     public boolean isTerminal() {
-        return this.status == DocPrStatus.REJECTED || this.status == DocPrStatus.MERGED;
+        return this.status == DocPrStatus.APPROVED
+                || this.status == DocPrStatus.REJECTED
+                || this.status == DocPrStatus.MERGED;
     }
 
     public void reject() {
         this.status = DocPrStatus.REJECTED;
+    }
+
+    public void approve() {
+        this.status = DocPrStatus.APPROVED;
     }
 }

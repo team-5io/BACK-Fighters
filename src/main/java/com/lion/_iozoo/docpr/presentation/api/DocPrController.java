@@ -1,7 +1,9 @@
 package com.lion._iozoo.docpr.presentation.api;
 
+import com.lion._iozoo.docpr.application.command.ApproveDocPrCommand;
 import com.lion._iozoo.docpr.application.command.CreateDocPrCommand;
 import com.lion._iozoo.docpr.application.command.RejectDocPrCommand;
+import com.lion._iozoo.docpr.application.usecase.ApproveDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.CreateDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.RejectDocPrUseCase;
@@ -33,6 +35,7 @@ public class DocPrController {
     private final CreateDocPrUseCase createDocPrUseCase;
     private final GetDocPrUseCase getDocPrUseCase;
     private final RejectDocPrUseCase rejectDocPrUseCase;
+    private final ApproveDocPrUseCase approveDocPrUseCase;
 
     @Operation(summary = "초안 → Doc PR 전환", description = "문서 작성자(R)가 초안을 Doc PR로 전환하고 승인권자(A)를 지정한다.")
     @PostMapping("/documents/{documentId}/doc-prs")
@@ -75,5 +78,18 @@ public class DocPrController {
         DocPr docPr = rejectDocPrUseCase.reject(authUser.userId(), command);
 
         return GlobalApiResponse.ok(DocPrResponseCode.DOC_PR_REJECTED, DocPrResponse.from(docPr));
+    }
+
+    @Operation(summary = "Doc PR 승인", description = "승인권자(A)가 Doc PR을 승인 처리한다.")
+    @PostMapping("/doc-prs/{prId}/approve")
+    public GlobalApiResponse<DocPrResponse> approveDocPr(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long prId) {
+
+        ApproveDocPrCommand command = new ApproveDocPrCommand(prId);
+
+        DocPr docPr = approveDocPrUseCase.approve(authUser.userId(), command);
+
+        return GlobalApiResponse.ok(DocPrResponseCode.DOC_PR_APPROVED, DocPrResponse.from(docPr));
     }
 }

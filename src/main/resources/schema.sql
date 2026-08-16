@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS doc_prs (
     approver_id       BIGINT   NOT NULL COMMENT '승인권자(A)',
     next_assignee_id  BIGINT   NULL COMMENT 'Follow-the-Sun 다음 작업자',
     proposed_content  LONGTEXT NOT NULL COMMENT '이 Doc PR이 제안하는 변경 내용',
-    status            ENUM('CREATED', 'AI_REVIEW', 'HUMAN_REVIEW', 'REJECTED', 'RESUBMITTED', 'REVIEWER_NEEDED', 'MERGED') NOT NULL DEFAULT 'CREATED',
+    status            ENUM('CREATED', 'AI_REVIEW', 'HUMAN_REVIEW', 'APPROVED', 'REJECTED', 'RESUBMITTED', 'REVIEWER_NEEDED', 'MERGED') NOT NULL DEFAULT 'CREATED',
     is_exception_merge BOOLEAN NOT NULL DEFAULT FALSE COMMENT '차단 조건 무시하고 예외적으로 머지됐는지',
     exception_reason  VARCHAR(500) NULL COMMENT '예외 머지 사유',
     merged_at         DATETIME NULL,

@@ -1,6 +1,6 @@
 package com.lion._iozoo.docpr.application.service;
 
-import com.lion._iozoo.docpr.application.command.RejectDocPrCommand;
+import com.lion._iozoo.docpr.application.command.ApproveDocPrCommand;
 import com.lion._iozoo.docpr.application.port.out.LoadDocPrPort;
 import com.lion._iozoo.docpr.application.port.out.SaveDocPrPort;
 import com.lion._iozoo.docpr.application.port.out.SaveDocPrStatusHistoryPort;
@@ -20,12 +20,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class RejectDocPrServiceTest {
+class ApproveDocPrServiceTest {
 
     @Mock
     private LoadDocPrPort loadDocPrPort;
@@ -34,8 +35,8 @@ class RejectDocPrServiceTest {
     @Mock
     private SaveDocPrStatusHistoryPort saveDocPrStatusHistoryPort;
 
-    private RejectDocPrService sut() {
-        return new RejectDocPrService(loadDocPrPort, saveDocPrPort, saveDocPrStatusHistoryPort);
+    private ApproveDocPrService sut() {
+        return new ApproveDocPrService(loadDocPrPort, saveDocPrPort, saveDocPrStatusHistoryPort);
     }
 
     private DocPr docPr(DocPrStatus status) {
@@ -46,22 +47,22 @@ class RejectDocPrServiceTest {
     }
 
     @Test
-    void 승인권자가_반려한다() {
+    void 승인권자가_승인한다() {
         DocPr docPr = docPr(DocPrStatus.CREATED);
         when(loadDocPrPort.loadById(1L)).thenReturn(Optional.of(docPr));
         when(saveDocPrPort.save(docPr)).thenReturn(docPr);
 
-        DocPr result = sut().reject(20L, new RejectDocPrCommand(1L, "사유"));
+        DocPr result = sut().approve(20L, new ApproveDocPrCommand(1L));
 
-        assertThat(result.getStatus()).isEqualTo(DocPrStatus.REJECTED);
-        verify(saveDocPrStatusHistoryPort).save(eq(1L), eq(DocPrStatus.CREATED), eq(DocPrStatus.REJECTED), eq(20L), eq("사유"));
+        assertThat(result.getStatus()).isEqualTo(DocPrStatus.APPROVED);
+        verify(saveDocPrStatusHistoryPort).save(eq(1L), eq(DocPrStatus.CREATED), eq(DocPrStatus.APPROVED), eq(20L), isNull());
     }
 
     @Test
     void DocPR이_없으면_예외() {
         when(loadDocPrPort.loadById(1L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> sut().reject(20L, new RejectDocPrCommand(1L, "사유")))
+        assertThatThrownBy(() -> sut().approve(20L, new ApproveDocPrCommand(1L)))
                 .isInstanceOf(DocPrNotFoundException.class);
 
         verify(saveDocPrPort, never()).save(any());
@@ -71,7 +72,7 @@ class RejectDocPrServiceTest {
     void 승인권자가_아니면_예외() {
         when(loadDocPrPort.loadById(1L)).thenReturn(Optional.of(docPr(DocPrStatus.CREATED)));
 
-        assertThatThrownBy(() -> sut().reject(99L, new RejectDocPrCommand(1L, "사유")))
+        assertThatThrownBy(() -> sut().approve(99L, new ApproveDocPrCommand(1L)))
                 .isInstanceOf(DocPrNotApproverException.class);
 
         verify(saveDocPrPort, never()).save(any());
@@ -81,17 +82,7 @@ class RejectDocPrServiceTest {
     void 이미_반려된_경우_예외() {
         when(loadDocPrPort.loadById(1L)).thenReturn(Optional.of(docPr(DocPrStatus.REJECTED)));
 
-        assertThatThrownBy(() -> sut().reject(20L, new RejectDocPrCommand(1L, "사유")))
-                .isInstanceOf(DocPrAlreadyTerminalException.class);
-
-        verify(saveDocPrPort, never()).save(any());
-    }
-
-    @Test
-    void 이미_머지된_경우_예외() {
-        when(loadDocPrPort.loadById(1L)).thenReturn(Optional.of(docPr(DocPrStatus.MERGED)));
-
-        assertThatThrownBy(() -> sut().reject(20L, new RejectDocPrCommand(1L, "사유")))
+        assertThatThrownBy(() -> sut().approve(20L, new ApproveDocPrCommand(1L)))
                 .isInstanceOf(DocPrAlreadyTerminalException.class);
 
         verify(saveDocPrPort, never()).save(any());
@@ -101,7 +92,17 @@ class RejectDocPrServiceTest {
     void 이미_승인된_경우_예외() {
         when(loadDocPrPort.loadById(1L)).thenReturn(Optional.of(docPr(DocPrStatus.APPROVED)));
 
-        assertThatThrownBy(() -> sut().reject(20L, new RejectDocPrCommand(1L, "사유")))
+        assertThatThrownBy(() -> sut().approve(20L, new ApproveDocPrCommand(1L)))
+                .isInstanceOf(DocPrAlreadyTerminalException.class);
+
+        verify(saveDocPrPort, never()).save(any());
+    }
+
+    @Test
+    void 이미_머지된_경우_예외() {
+        when(loadDocPrPort.loadById(1L)).thenReturn(Optional.of(docPr(DocPrStatus.MERGED)));
+
+        assertThatThrownBy(() -> sut().approve(20L, new ApproveDocPrCommand(1L)))
                 .isInstanceOf(DocPrAlreadyTerminalException.class);
 
         verify(saveDocPrPort, never()).save(any());
