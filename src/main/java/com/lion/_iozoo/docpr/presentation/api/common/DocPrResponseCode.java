@@ -7,7 +7,8 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum DocPrResponseCode implements ResponseCode {
-    DOC_PR_CREATED("DOCPR_201_1", "Doc PR이 생성되었습니다.");
+    DOC_PR_CREATED("DOCPR_201_1", "Doc PR이 생성되었습니다."),
+    DOC_PR_FETCHED("DOCPR_200_1", "Doc PR을 조회했습니다.");
 
     private final String code;
     private final String message;
