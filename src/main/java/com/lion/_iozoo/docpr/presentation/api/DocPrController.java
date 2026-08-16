@@ -6,6 +6,7 @@ import com.lion._iozoo.docpr.application.command.ChangeDocPrApproverCommand;
 import com.lion._iozoo.docpr.application.command.CreateDocPrCommand;
 import com.lion._iozoo.docpr.application.command.MergeDocPrCommand;
 import com.lion._iozoo.docpr.application.command.RejectDocPrCommand;
+import com.lion._iozoo.docpr.application.command.ExceptionMergeDocPrCommand;
 import com.lion._iozoo.docpr.application.command.ResubmitDocPrCommand;
 import com.lion._iozoo.docpr.application.result.DocPrHistoryEntry;
 import com.lion._iozoo.docpr.application.result.DocPrReview;
@@ -14,6 +15,7 @@ import com.lion._iozoo.docpr.application.usecase.AddDocPrReviewUseCase;
 import com.lion._iozoo.docpr.application.usecase.ApproveDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.ChangeDocPrApproverUseCase;
 import com.lion._iozoo.docpr.application.usecase.CreateDocPrUseCase;
+import com.lion._iozoo.docpr.application.usecase.ExceptionMergeDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrHistoryUseCase;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.MergeCheckDocPrUseCase;
@@ -25,6 +27,7 @@ import com.lion._iozoo.docpr.presentation.api.common.DocPrResponseCode;
 import com.lion._iozoo.docpr.presentation.api.request.AddDocPrReviewRequest;
 import com.lion._iozoo.docpr.presentation.api.request.ChangeDocPrApproverRequest;
 import com.lion._iozoo.docpr.presentation.api.request.CreateDocPrRequest;
+import com.lion._iozoo.docpr.presentation.api.request.ExceptionMergeDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.request.RejectDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.request.ResubmitDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.response.DocPrHistoryResponse;
@@ -64,6 +67,7 @@ public class DocPrController {
     private final GetDocPrHistoryUseCase getDocPrHistoryUseCase;
     private final ChangeDocPrApproverUseCase changeDocPrApproverUseCase;
     private final AddDocPrReviewUseCase addDocPrReviewUseCase;
+    private final ExceptionMergeDocPrUseCase exceptionMergeDocPrUseCase;
 
     @Operation(summary = "초안 → Doc PR 전환", description = "문서 작성자(R)가 초안을 Doc PR로 전환하고 승인권자(A)를 지정한다.")
     @PostMapping("/documents/{documentId}/doc-prs")
@@ -199,5 +203,19 @@ public class DocPrController {
         DocPrReview review = addDocPrReviewUseCase.addReview(authUser.userId(), command);
 
         return GlobalApiResponse.created(DocPrResponseCode.DOC_PR_REVIEW_CREATED, DocPrReviewResponse.from(review));
+    }
+
+    @Operation(summary = "예외 Merge", description = "승인권자(A)가 차단 조건에도 불구하고 예외적으로 Doc PR을 병합 확정한다.")
+    @PostMapping("/doc-prs/{prId}/merge/exception")
+    public GlobalApiResponse<DocPrResponse> exceptionMergeDocPr(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long prId,
+            @RequestBody @Valid ExceptionMergeDocPrRequest request) {
+
+        ExceptionMergeDocPrCommand command = new ExceptionMergeDocPrCommand(prId, request.reason());
+
+        DocPr docPr = exceptionMergeDocPrUseCase.mergeWithException(authUser.userId(), command);
+
+        return GlobalApiResponse.ok(DocPrResponseCode.DOC_PR_EXCEPTION_MERGED, DocPrResponse.from(docPr));
     }
 }

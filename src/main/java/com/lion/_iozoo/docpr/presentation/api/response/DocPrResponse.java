@@ -28,7 +28,13 @@ public record DocPrResponse(
         DocPrStatus status,
 
         @Schema(description = "병합 확정 시각 (미병합이면 null)", example = "2026-08-16T21:00:00")
-        LocalDateTime mergedAt
+        LocalDateTime mergedAt,
+
+        @Schema(description = "차단 조건을 무시하고 예외적으로 병합됐는지 여부", example = "false")
+        boolean exceptionMerge,
+
+        @Schema(description = "예외 병합 사유 (예외 병합이 아니면 null)", example = "긴급 배포 마감으로 사람 리뷰 완료 전 병합")
+        String exceptionReason
 ) {
     public static DocPrResponse from(DocPr docPr) {
         return DocPrResponse.builder()
@@ -39,6 +45,8 @@ public record DocPrResponse(
                 .proposedContent(docPr.getProposedContent())
                 .status(docPr.getStatus())
                 .mergedAt(docPr.getMergedAt())
+                .exceptionMerge(docPr.isExceptionMerge())
+                .exceptionReason(docPr.getExceptionReason())
                 .build();
     }
 }
