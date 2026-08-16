@@ -9,7 +9,7 @@ public class DocPr {
     private final Long documentId;
     private final Long requesterId;
     private final Long approverId;
-    private final String proposedContent;
+    private String proposedContent;
     private DocPrStatus status;
 
     @Builder
@@ -35,5 +35,14 @@ public class DocPr {
 
     public void approve() {
         this.status = DocPrStatus.APPROVED;
+    }
+
+    public boolean isRejected() {
+        return this.status == DocPrStatus.REJECTED;
+    }
+
+    public void resubmit(String proposedContent) {
+        this.proposedContent = proposedContent;
+        this.status = DocPrStatus.RESUBMITTED;
     }
 }
