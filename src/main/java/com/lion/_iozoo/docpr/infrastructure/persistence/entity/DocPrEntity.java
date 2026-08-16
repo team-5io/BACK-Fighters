@@ -39,9 +39,16 @@ public class DocPrEntity extends BaseTimeEntity {
     @Column(name = "merged_at")
     private LocalDateTime mergedAt;
 
+    @Column(name = "is_exception_merge", nullable = false)
+    private boolean exceptionMerge;
+
+    @Column(name = "exception_reason", length = 500)
+    private String exceptionReason;
+
     @Builder
     private DocPrEntity(Long id, Long documentId, Long requesterId, Long approverId,
-                        String proposedContent, DocPrStatus status, LocalDateTime mergedAt) {
+                        String proposedContent, DocPrStatus status, LocalDateTime mergedAt,
+                        boolean exceptionMerge, String exceptionReason) {
         this.id = id;
         this.documentId = documentId;
         this.requesterId = requesterId;
@@ -49,5 +56,7 @@ public class DocPrEntity extends BaseTimeEntity {
         this.proposedContent = proposedContent;
         this.status = status;
         this.mergedAt = mergedAt;
+        this.exceptionMerge = exceptionMerge;
+        this.exceptionReason = exceptionReason;
     }
 }
