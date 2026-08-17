@@ -16,9 +16,11 @@ import com.lion._iozoo.docpr.application.usecase.ApproveDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.ChangeDocPrApproverUseCase;
 import com.lion._iozoo.docpr.application.usecase.CreateDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.ExceptionMergeDocPrUseCase;
+import com.lion._iozoo.docpr.application.result.NextAssigneeInfoResult;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrHistoryUseCase;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrReviewsUseCase;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrUseCase;
+import com.lion._iozoo.docpr.application.usecase.GetNextAssigneeInfoUseCase;
 import com.lion._iozoo.docpr.application.usecase.MergeCheckDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.MergeDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.RejectDocPrUseCase;
@@ -35,6 +37,7 @@ import com.lion._iozoo.docpr.presentation.api.response.DocPrHistoryResponse;
 import com.lion._iozoo.docpr.presentation.api.response.DocPrResponse;
 import com.lion._iozoo.docpr.presentation.api.response.DocPrReviewResponse;
 import com.lion._iozoo.docpr.presentation.api.response.MergeCheckResponse;
+import com.lion._iozoo.docpr.presentation.api.response.NextAssigneeInfoResponse;
 import com.lion._iozoo.global.presentation.GlobalApiResponse;
 import com.lion._iozoo.global.security.AuthUser;
 import io.swagger.v3.oas.annotations.Operation;
@@ -70,6 +73,7 @@ public class DocPrController {
     private final AddDocPrReviewUseCase addDocPrReviewUseCase;
     private final ExceptionMergeDocPrUseCase exceptionMergeDocPrUseCase;
     private final GetDocPrReviewsUseCase getDocPrReviewsUseCase;
+    private final GetNextAssigneeInfoUseCase getNextAssigneeInfoUseCase;
 
     @Operation(summary = "초안 → Doc PR 전환", description = "문서 작성자(R)가 초안을 Doc PR로 전환하고 승인권자(A)를 지정한다.")
     @PostMapping("/documents/{documentId}/doc-prs")
@@ -233,5 +237,16 @@ public class DocPrController {
                 .toList();
 
         return GlobalApiResponse.ok(DocPrResponseCode.DOC_PR_REVIEWS_FETCHED, reviews);
+    }
+
+    @Operation(summary = "다음 작업자 정보 조회", description = "Follow-the-Sun 워크플로우에서 다음 작업자 지정이 필요한 상태인지와 인수인계 정보 위치(가장 최근 상태 전이 이력)를 조회한다.")
+    @GetMapping("/doc-prs/{prId}/next-assignee")
+    public GlobalApiResponse<NextAssigneeInfoResponse> getNextAssigneeInfo(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long prId) {
+
+        NextAssigneeInfoResult result = getNextAssigneeInfoUseCase.getInfo(authUser.userId(), prId);
+
+        return GlobalApiResponse.ok(DocPrResponseCode.NEXT_ASSIGNEE_INFO_FETCHED, NextAssigneeInfoResponse.from(result));
     }
 }
