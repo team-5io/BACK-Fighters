@@ -6,6 +6,7 @@ import com.lion._iozoo.document.application.command.RaciAssignmentCommand;
 import com.lion._iozoo.document.application.command.SetDocumentRaciCommand;
 import com.lion._iozoo.document.application.command.UpdateDocumentCommand;
 import com.lion._iozoo.document.application.result.DocumentRaciEntry;
+import com.lion._iozoo.document.application.result.DocumentRelationExploreResult;
 import com.lion._iozoo.document.application.usecase.*;
 import com.lion._iozoo.document.domain.Document;
 import com.lion._iozoo.document.domain.DocumentRelation;
@@ -15,6 +16,7 @@ import com.lion._iozoo.document.presentation.api.request.CreateDocumentRequest;
 import com.lion._iozoo.document.presentation.api.request.SetDocumentRaciRequest;
 import com.lion._iozoo.document.presentation.api.request.UpdateDocumentRequest;
 import com.lion._iozoo.document.presentation.api.response.DocumentRaciResponse;
+import com.lion._iozoo.document.presentation.api.response.DocumentRelationExploreResponse;
 import com.lion._iozoo.document.presentation.api.response.DocumentRelationResponse;
 import com.lion._iozoo.document.presentation.api.response.DocumentResponse;
 import com.lion._iozoo.global.presentation.GlobalApiResponse;
@@ -44,6 +46,7 @@ public class DocumentController {
     private final SearchDocumentsUseCase searchDocumentsUseCase;
     private final SetDocumentRaciUseCase setDocumentRaciUseCase;
     private final CreateDocumentRelationUseCase createDocumentRelationUseCase;
+    private final GetDocumentRelationsUseCase getDocumentRelationsUseCase;
 
     @Operation(summary = "문서 생성", description = "팀 공간에 DRAFT 상태의 새 문서를 생성한다.")
     @PostMapping
@@ -156,5 +159,20 @@ public class DocumentController {
 
         return GlobalApiResponse.created(DocumentResponseCode.DOCUMENT_RELATION_CREATED,
                 DocumentRelationResponse.from(relation));
+    }
+
+    @Operation(summary = "문서 관계 그래프 탐색", description = "문서를 노드로, 상위/하위/참조/의존 관계를 양방향으로 탐색한다. 지정 참여자 전용 문서는 작성자 본인이 아니면 결과에서 숨긴다.")
+    @GetMapping("/{documentId}/relations")
+    public GlobalApiResponse<List<DocumentRelationExploreResponse>> getDocumentRelations(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long documentId) {
+
+        List<DocumentRelationExploreResult> results = getDocumentRelationsUseCase.explore(authUser.userId(), documentId);
+
+        List<DocumentRelationExploreResponse> response = results.stream()
+                .map(DocumentRelationExploreResponse::from)
+                .toList();
+
+        return GlobalApiResponse.ok(DocumentResponseCode.DOCUMENT_RELATIONS_FETCHED, response);
     }
 }

@@ -1,5 +1,6 @@
 package com.lion._iozoo.document.infrastructure.persistence;
 
+import com.lion._iozoo.document.application.port.out.LoadDocumentRelationsPort;
 import com.lion._iozoo.document.application.port.out.SaveDocumentRelationPort;
 import com.lion._iozoo.document.domain.DocumentRelation;
 import com.lion._iozoo.document.infrastructure.persistence.entity.DocumentRelationEntity;
@@ -8,9 +9,11 @@ import com.lion._iozoo.document.infrastructure.persistence.repository.DocumentRe
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 @RequiredArgsConstructor
-public class DocumentRelationPersistenceAdapter implements SaveDocumentRelationPort {
+public class DocumentRelationPersistenceAdapter implements SaveDocumentRelationPort, LoadDocumentRelationsPort {
 
     private final DocumentRelationJpaRepository documentRelationJpaRepository;
     private final DocumentRelationMapper documentRelationMapper;
@@ -20,5 +23,13 @@ public class DocumentRelationPersistenceAdapter implements SaveDocumentRelationP
         DocumentRelationEntity entity = documentRelationMapper.toEntity(documentRelation);
         DocumentRelationEntity saved = documentRelationJpaRepository.save(entity);
         return documentRelationMapper.toDomain(saved);
+    }
+
+    @Override
+    public List<DocumentRelation> loadByDocumentId(Long documentId) {
+        return documentRelationJpaRepository.findBySourceDocumentIdOrTargetDocumentId(documentId, documentId)
+                .stream()
+                .map(documentRelationMapper::toDomain)
+                .toList();
     }
 }
