@@ -17,6 +17,7 @@ import com.lion._iozoo.docpr.application.usecase.ChangeDocPrApproverUseCase;
 import com.lion._iozoo.docpr.application.usecase.CreateDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.ExceptionMergeDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrHistoryUseCase;
+import com.lion._iozoo.docpr.application.usecase.GetDocPrReviewsUseCase;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.MergeCheckDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.MergeDocPrUseCase;
@@ -68,6 +69,7 @@ public class DocPrController {
     private final ChangeDocPrApproverUseCase changeDocPrApproverUseCase;
     private final AddDocPrReviewUseCase addDocPrReviewUseCase;
     private final ExceptionMergeDocPrUseCase exceptionMergeDocPrUseCase;
+    private final GetDocPrReviewsUseCase getDocPrReviewsUseCase;
 
     @Operation(summary = "초안 → Doc PR 전환", description = "문서 작성자(R)가 초안을 Doc PR로 전환하고 승인권자(A)를 지정한다.")
     @PostMapping("/documents/{documentId}/doc-prs")
@@ -217,5 +219,19 @@ public class DocPrController {
         DocPr docPr = exceptionMergeDocPrUseCase.mergeWithException(authUser.userId(), command);
 
         return GlobalApiResponse.ok(DocPrResponseCode.DOC_PR_EXCEPTION_MERGED, DocPrResponse.from(docPr));
+    }
+
+    @Operation(summary = "리뷰 의견 조회", description = "Doc PR에 등록된 리뷰 의견 목록을 시간순으로 조회한다.")
+    @GetMapping("/doc-prs/{prId}/reviews")
+    public GlobalApiResponse<List<DocPrReviewResponse>> getDocPrReviews(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long prId) {
+
+        List<DocPrReviewResponse> reviews = getDocPrReviewsUseCase.getReviews(authUser.userId(), prId)
+                .stream()
+                .map(DocPrReviewResponse::from)
+                .toList();
+
+        return GlobalApiResponse.ok(DocPrResponseCode.DOC_PR_REVIEWS_FETCHED, reviews);
     }
 }
