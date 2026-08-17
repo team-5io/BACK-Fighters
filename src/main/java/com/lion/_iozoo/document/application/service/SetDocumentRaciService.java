@@ -4,6 +4,7 @@ import com.lion._iozoo.document.application.command.RaciAssignmentCommand;
 import com.lion._iozoo.document.application.command.SetDocumentRaciCommand;
 import com.lion._iozoo.document.application.port.out.LoadDocumentPort;
 import com.lion._iozoo.document.application.port.out.ReplaceDocumentRaciPort;
+import com.lion._iozoo.document.application.port.out.SaveDocumentPort;
 import com.lion._iozoo.document.application.result.DocumentRaciEntry;
 import com.lion._iozoo.document.application.usecase.SetDocumentRaciUseCase;
 import com.lion._iozoo.document.domain.Document;
@@ -27,6 +28,7 @@ public class SetDocumentRaciService implements SetDocumentRaciUseCase {
 
     private final LoadDocumentPort loadDocumentPort;
     private final ReplaceDocumentRaciPort replaceDocumentRaciPort;
+    private final SaveDocumentPort saveDocumentPort;
     private final TeamPermissionChecker teamPermissionChecker;
 
     @Override
@@ -60,6 +62,9 @@ public class SetDocumentRaciService implements SetDocumentRaciUseCase {
                     .toList();
 
             List<DocumentRaciEntry> saved = replaceDocumentRaciPort.replaceAll(command.documentId(), newEntries);
+
+            document.applyRaciAssignment(!saved.isEmpty());
+            saveDocumentPort.save(document);
 
             log.info("event=document_raci_set_완료 userId={}, documentId={}, count={}",
                     userId, command.documentId(), saved.size());

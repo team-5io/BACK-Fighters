@@ -1,10 +1,13 @@
 package com.lion._iozoo.document.application.service;
 
 import com.lion._iozoo.document.application.port.out.LoadDocumentPort;
+import com.lion._iozoo.document.application.port.out.LoadDocumentRaciPort;
 import com.lion._iozoo.document.application.port.out.LoadDocumentVersionsPort;
 import com.lion._iozoo.document.application.usecase.GetDocumentVersionsUseCase;
 import com.lion._iozoo.document.domain.Document;
+import com.lion._iozoo.document.domain.DocumentAccessLevel;
 import com.lion._iozoo.document.domain.DocumentVersion;
+import com.lion._iozoo.document.domain.exception.DocumentAccessDeniedException;
 import com.lion._iozoo.document.domain.exception.DocumentNotFoundException;
 import com.lion._iozoo.team.application.TeamPermissionChecker;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +24,7 @@ public class GetDocumentVersionsService implements GetDocumentVersionsUseCase {
 
     private final LoadDocumentPort loadDocumentPort;
     private final LoadDocumentVersionsPort loadDocumentVersionsPort;
+    private final LoadDocumentRaciPort loadDocumentRaciPort;
     private final TeamPermissionChecker teamPermissionChecker;
 
     @Override
@@ -33,6 +37,11 @@ public class GetDocumentVersionsService implements GetDocumentVersionsUseCase {
                     .orElseThrow(() -> new DocumentNotFoundException(documentId));
 
             teamPermissionChecker.requireMember(document.getTeamId(), userId);
+
+            var role = RaciRoleLookup.roleOf(loadDocumentRaciPort.loadByDocumentId(documentId), userId);
+            if (document.resolveAccessLevel(userId, role) == DocumentAccessLevel.NONE) {
+                throw new DocumentAccessDeniedException(documentId);
+            }
 
             List<DocumentVersion> versions = loadDocumentVersionsPort.loadByDocumentId(documentId);
 

@@ -1,5 +1,6 @@
 package com.lion._iozoo.docpr.application.service;
 
+import com.lion._iozoo.docpr.application.port.out.CheckDocumentAccessPort;
 import com.lion._iozoo.docpr.application.port.out.DocumentSummary;
 import com.lion._iozoo.docpr.application.port.out.LoadDocPrPort;
 import com.lion._iozoo.docpr.application.port.out.LoadDocPrStatusHistoryPort;
@@ -7,6 +8,7 @@ import com.lion._iozoo.docpr.application.port.out.LoadDocumentForDocPrPort;
 import com.lion._iozoo.docpr.application.result.DocPrHistoryEntry;
 import com.lion._iozoo.docpr.domain.DocPr;
 import com.lion._iozoo.docpr.domain.DocPrStatus;
+import com.lion._iozoo.docpr.domain.exception.DocPrAccessDeniedException;
 import com.lion._iozoo.docpr.domain.exception.DocPrNotFoundException;
 import com.lion._iozoo.global.exception.ForbiddenException;
 import com.lion._iozoo.team.application.TeamPermissionChecker;
@@ -34,10 +36,12 @@ class GetDocPrHistoryServiceTest {
     @Mock
     private LoadDocPrStatusHistoryPort loadDocPrStatusHistoryPort;
     @Mock
+    private CheckDocumentAccessPort checkDocumentAccessPort;
+    @Mock
     private TeamPermissionChecker teamPermissionChecker;
 
     private GetDocPrHistoryService sut() {
-        return new GetDocPrHistoryService(loadDocPrPort, loadDocumentForDocPrPort, loadDocPrStatusHistoryPort, teamPermissionChecker);
+        return new GetDocPrHistoryService(loadDocPrPort, loadDocumentForDocPrPort, loadDocPrStatusHistoryPort, checkDocumentAccessPort, teamPermissionChecker);
     }
 
     private DocPr docPr() {
@@ -52,6 +56,7 @@ class GetDocPrHistoryServiceTest {
         when(loadDocPrPort.loadById(1L)).thenReturn(Optional.of(docPr()));
         when(loadDocumentForDocPrPort.loadSummary(100L))
                 .thenReturn(Optional.of(new DocumentSummary(100L, 1L, 10L, false)));
+        when(checkDocumentAccessPort.hasFullAccess(100L, 30L)).thenReturn(true);
         List<DocPrHistoryEntry> entries = List.of(
                 new DocPrHistoryEntry(null, DocPrStatus.CREATED, 10L, null, LocalDateTime.now()),
                 new DocPrHistoryEntry(DocPrStatus.CREATED, DocPrStatus.APPROVED, 20L, null, LocalDateTime.now())
@@ -81,5 +86,16 @@ class GetDocPrHistoryServiceTest {
 
         assertThatThrownBy(() -> sut().getHistory(99L, 1L))
                 .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void 문서_접근권한이_FULL이_아니면_예외() {
+        when(loadDocPrPort.loadById(1L)).thenReturn(Optional.of(docPr()));
+        when(loadDocumentForDocPrPort.loadSummary(100L))
+                .thenReturn(Optional.of(new DocumentSummary(100L, 1L, 10L, false)));
+        when(checkDocumentAccessPort.hasFullAccess(100L, 40L)).thenReturn(false);
+
+        assertThatThrownBy(() -> sut().getHistory(40L, 1L))
+                .isInstanceOf(DocPrAccessDeniedException.class);
     }
 }

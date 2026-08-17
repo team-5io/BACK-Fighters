@@ -4,6 +4,7 @@ import com.lion._iozoo.document.application.command.RaciAssignmentCommand;
 import com.lion._iozoo.document.application.command.SetDocumentRaciCommand;
 import com.lion._iozoo.document.application.port.out.LoadDocumentPort;
 import com.lion._iozoo.document.application.port.out.ReplaceDocumentRaciPort;
+import com.lion._iozoo.document.application.port.out.SaveDocumentPort;
 import com.lion._iozoo.document.application.result.DocumentRaciEntry;
 import com.lion._iozoo.document.domain.Document;
 import com.lion._iozoo.document.domain.DocumentStatus;
@@ -23,6 +24,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -37,10 +39,12 @@ class SetDocumentRaciServiceTest {
     @Mock
     private ReplaceDocumentRaciPort replaceDocumentRaciPort;
     @Mock
+    private SaveDocumentPort saveDocumentPort;
+    @Mock
     private TeamPermissionChecker teamPermissionChecker;
 
     private SetDocumentRaciService sut() {
-        return new SetDocumentRaciService(loadDocumentPort, replaceDocumentRaciPort, teamPermissionChecker);
+        return new SetDocumentRaciService(loadDocumentPort, replaceDocumentRaciPort, saveDocumentPort, teamPermissionChecker);
     }
 
     private Document document() {
@@ -68,6 +72,24 @@ class SetDocumentRaciServiceTest {
         verify(teamPermissionChecker).requireAdmin(1L, 1L);
         verify(teamPermissionChecker).requireMember(1L, 10L);
         verify(teamPermissionChecker).requireMember(1L, 20L);
+        verify(saveDocumentPort).save(argThat(Document::isRestricted));
+    }
+
+    @Test
+    void 배정을_전부_해제하면_restricted가_원복된다() {
+        Document restricted = Document.builder()
+                .id(100L).teamId(1L).authorId(10L)
+                .title("제목").content("내용")
+                .status(DocumentStatus.DRAFT).restricted(true)
+                .build();
+        when(loadDocumentPort.loadById(100L)).thenReturn(Optional.of(restricted));
+        when(replaceDocumentRaciPort.replaceAll(eq(100L), any())).thenReturn(List.of());
+
+        SetDocumentRaciCommand command = new SetDocumentRaciCommand(100L, List.of());
+
+        sut().setRaci(1L, command);
+
+        verify(saveDocumentPort).save(argThat(document -> !document.isRestricted()));
     }
 
     @Test
