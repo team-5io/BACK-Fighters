@@ -4,15 +4,22 @@ import com.lion._iozoo.global.presentation.GlobalApiResponse;
 import com.lion._iozoo.global.security.AuthUser;
 import com.lion._iozoo.team.application.command.CreateTeamCommand;
 import com.lion._iozoo.team.application.command.InviteTeamMemberCommand;
+import com.lion._iozoo.team.application.command.UpsertCollaborationRuleCommand;
+import com.lion._iozoo.team.application.usecase.AdoptCollaborationRuleUseCase;
 import com.lion._iozoo.team.application.usecase.CreateTeamUseCase;
+import com.lion._iozoo.team.application.usecase.GetCollaborationRuleUseCase;
 import com.lion._iozoo.team.application.usecase.InviteTeamMemberUseCase;
 import com.lion._iozoo.team.application.usecase.ListTeamMembersUseCase;
 import com.lion._iozoo.team.application.usecase.RemoveTeamMemberUseCase;
+import com.lion._iozoo.team.application.usecase.UpsertCollaborationRuleUseCase;
+import com.lion._iozoo.team.infrastructure.persistence.TeamCollaborationRuleEntity;
 import com.lion._iozoo.team.infrastructure.persistence.TeamEntity;
 import com.lion._iozoo.team.infrastructure.persistence.TeamMemberEntity;
 import com.lion._iozoo.team.presentation.api.common.TeamResponseCode;
 import com.lion._iozoo.team.presentation.api.request.CreateTeamRequest;
 import com.lion._iozoo.team.presentation.api.request.InviteTeamMemberRequest;
+import com.lion._iozoo.team.presentation.api.request.UpsertCollaborationRuleRequest;
+import com.lion._iozoo.team.presentation.api.response.CollaborationRuleResponse;
 import com.lion._iozoo.team.presentation.api.response.TeamMemberResponse;
 import com.lion._iozoo.team.presentation.api.response.TeamResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,6 +31,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -40,6 +48,9 @@ public class TeamController {
     private final InviteTeamMemberUseCase inviteTeamMemberUseCase;
     private final RemoveTeamMemberUseCase removeTeamMemberUseCase;
     private final ListTeamMembersUseCase listTeamMembersUseCase;
+    private final GetCollaborationRuleUseCase getCollaborationRuleUseCase;
+    private final UpsertCollaborationRuleUseCase upsertCollaborationRuleUseCase;
+    private final AdoptCollaborationRuleUseCase adoptCollaborationRuleUseCase;
 
     @Operation(summary = "팀 생성", description = "새 협업 팀 공간을 생성한다. 생성자는 자동으로 ADMIN이 된다.")
     @PostMapping
@@ -90,5 +101,40 @@ public class TeamController {
                 .toList();
 
         return GlobalApiResponse.ok(TeamResponseCode.TEAM_MEMBERS_FETCHED, members);
+    }
+
+    @Operation(summary = "협업 규칙 조회", description = "팀원이 팀의 협업 규칙(Team Collaboration Charter)을 조회한다. 아직 없으면 404를 반환한다.")
+    @GetMapping("/{teamId}/collaboration-rule")
+    public GlobalApiResponse<CollaborationRuleResponse> getCollaborationRule(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long teamId) {
+
+        TeamCollaborationRuleEntity rule = getCollaborationRuleUseCase.getRule(teamId, authUser.userId());
+
+        return GlobalApiResponse.ok(TeamResponseCode.COLLABORATION_RULE_FETCHED, CollaborationRuleResponse.from(rule));
+    }
+
+    @Operation(summary = "협업 규칙 수정", description = "팀 관리자가 협업 규칙 내용을 수정한다. 아직 없으면 DRAFT 상태로 새로 생성하고, 이미 채택(ADOPTED)된 규칙이어도 수정하면 다시 DRAFT로 돌아간다.")
+    @PutMapping("/{teamId}/collaboration-rule")
+    public GlobalApiResponse<CollaborationRuleResponse> upsertCollaborationRule(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long teamId,
+            @RequestBody @Valid UpsertCollaborationRuleRequest request) {
+
+        UpsertCollaborationRuleCommand command = new UpsertCollaborationRuleCommand(request.content());
+        TeamCollaborationRuleEntity rule = upsertCollaborationRuleUseCase.upsert(teamId, authUser.userId(), command);
+
+        return GlobalApiResponse.ok(TeamResponseCode.COLLABORATION_RULE_UPSERTED, CollaborationRuleResponse.from(rule));
+    }
+
+    @Operation(summary = "협업 규칙 채택", description = "팀 관리자가 DRAFT 상태의 협업 규칙을 ADOPTED로 확정한다.")
+    @PostMapping("/{teamId}/collaboration-rule/adopt")
+    public GlobalApiResponse<CollaborationRuleResponse> adoptCollaborationRule(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long teamId) {
+
+        TeamCollaborationRuleEntity rule = adoptCollaborationRuleUseCase.adopt(teamId, authUser.userId());
+
+        return GlobalApiResponse.ok(TeamResponseCode.COLLABORATION_RULE_ADOPTED, CollaborationRuleResponse.from(rule));
     }
 }
