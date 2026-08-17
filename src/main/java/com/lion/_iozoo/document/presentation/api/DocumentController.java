@@ -1,17 +1,21 @@
 package com.lion._iozoo.document.presentation.api;
 
 import com.lion._iozoo.document.application.command.CreateDocumentCommand;
+import com.lion._iozoo.document.application.command.CreateDocumentRelationCommand;
 import com.lion._iozoo.document.application.command.RaciAssignmentCommand;
 import com.lion._iozoo.document.application.command.SetDocumentRaciCommand;
 import com.lion._iozoo.document.application.command.UpdateDocumentCommand;
 import com.lion._iozoo.document.application.result.DocumentRaciEntry;
 import com.lion._iozoo.document.application.usecase.*;
 import com.lion._iozoo.document.domain.Document;
+import com.lion._iozoo.document.domain.DocumentRelation;
 import com.lion._iozoo.document.presentation.api.common.DocumentResponseCode;
+import com.lion._iozoo.document.presentation.api.request.CreateDocumentRelationRequest;
 import com.lion._iozoo.document.presentation.api.request.CreateDocumentRequest;
 import com.lion._iozoo.document.presentation.api.request.SetDocumentRaciRequest;
 import com.lion._iozoo.document.presentation.api.request.UpdateDocumentRequest;
 import com.lion._iozoo.document.presentation.api.response.DocumentRaciResponse;
+import com.lion._iozoo.document.presentation.api.response.DocumentRelationResponse;
 import com.lion._iozoo.document.presentation.api.response.DocumentResponse;
 import com.lion._iozoo.global.presentation.GlobalApiResponse;
 import com.lion._iozoo.global.security.AuthUser;
@@ -39,6 +43,7 @@ public class DocumentController {
     private final ListDocumentsUseCase listDocumentsUseCase;
     private final SearchDocumentsUseCase searchDocumentsUseCase;
     private final SetDocumentRaciUseCase setDocumentRaciUseCase;
+    private final CreateDocumentRelationUseCase createDocumentRelationUseCase;
 
     @Operation(summary = "문서 생성", description = "팀 공간에 DRAFT 상태의 새 문서를 생성한다.")
     @PostMapping
@@ -133,5 +138,23 @@ public class DocumentController {
                 .toList();
 
         return GlobalApiResponse.ok(DocumentResponseCode.DOCUMENT_RACI_SET, response);
+    }
+
+    @Operation(summary = "문서 관계 생성", description = "문서 간 상위/하위/참조/의존 관계를 생성한다. Document Graph, Impact Analysis 기반 데이터.")
+    @PostMapping("/{documentId}/relations")
+    public GlobalApiResponse<DocumentRelationResponse> createDocumentRelation(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long documentId,
+            @RequestBody @Valid CreateDocumentRelationRequest request) {
+
+        CreateDocumentRelationCommand command = new CreateDocumentRelationCommand(
+                request.targetDocumentId(),
+                request.relationType()
+        );
+
+        DocumentRelation relation = createDocumentRelationUseCase.create(authUser.userId(), documentId, command);
+
+        return GlobalApiResponse.created(DocumentResponseCode.DOCUMENT_RELATION_CREATED,
+                DocumentRelationResponse.from(relation));
     }
 }

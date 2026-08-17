@@ -4,8 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lion._iozoo.document.application.result.DocumentRaciEntry;
 import com.lion._iozoo.document.application.usecase.*;
 import com.lion._iozoo.document.domain.Document;
+import com.lion._iozoo.document.domain.DocumentRelation;
 import com.lion._iozoo.document.domain.DocumentStatus;
 import com.lion._iozoo.document.domain.RaciRole;
+import com.lion._iozoo.document.domain.RelationType;
+import com.lion._iozoo.document.presentation.api.request.CreateDocumentRelationRequest;
 import com.lion._iozoo.document.presentation.api.request.CreateDocumentRequest;
 import com.lion._iozoo.document.presentation.api.request.RaciAssignmentRequest;
 import com.lion._iozoo.document.presentation.api.request.SetDocumentRaciRequest;
@@ -64,6 +67,9 @@ class DocumentControllerTest {
 
     @MockBean
     private SetDocumentRaciUseCase setDocumentRaciUseCase;
+
+    @MockBean
+    private CreateDocumentRelationUseCase createDocumentRelationUseCase;
 
     @MockBean
     private JwtTokenProvider jwtTokenProvider;
@@ -208,5 +214,31 @@ class DocumentControllerTest {
                 .andExpect(jsonPath("$.code").value("DOCUMENT_200_5"))
                 .andExpect(jsonPath("$.data[0].userId").value(10L))
                 .andExpect(jsonPath("$.data[0].role").value("R"));
+    }
+
+    @Test
+    @DisplayName("POST /documents/{documentId}/relations - 문서 관계 생성 성공")
+    void createDocumentRelation_success() throws Exception {
+        DocumentRelation relation = DocumentRelation.builder()
+                .id(1L)
+                .sourceDocumentId(100L)
+                .targetDocumentId(200L)
+                .relationType(RelationType.REFERENCE)
+                .createdAt(java.time.LocalDateTime.now())
+                .build();
+        given(createDocumentRelationUseCase.create(eq(USER_ID), eq(100L), any())).willReturn(relation);
+
+        CreateDocumentRelationRequest request = new CreateDocumentRelationRequest(200L, RelationType.REFERENCE);
+
+        mockMvc.perform(post("/documents/100/relations")
+                        .with(authentication(authToken()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("DOCUMENT_201_2"))
+                .andExpect(jsonPath("$.data.sourceDocumentId").value(100L))
+                .andExpect(jsonPath("$.data.targetDocumentId").value(200L))
+                .andExpect(jsonPath("$.data.relationType").value("REFERENCE"));
     }
 }
