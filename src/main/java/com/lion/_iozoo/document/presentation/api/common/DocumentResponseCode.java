@@ -13,7 +13,8 @@ public enum DocumentResponseCode implements ResponseCode {
     DOCUMENTS_FETCHED("DOCUMENT_200_3", "문서 목록을 조회했습니다."),
     DOCUMENTS_SEARCHED("DOCUMENT_200_4", "문서 검색 결과를 조회했습니다."),
     DOCUMENT_RACI_SET("DOCUMENT_200_5", "RACI 역할이 지정되었습니다."),
-    DOCUMENT_RELATION_CREATED("DOCUMENT_201_2", "문서 관계가 생성되었습니다.");
+    DOCUMENT_RELATION_CREATED("DOCUMENT_201_2", "문서 관계가 생성되었습니다."),
+    DOCUMENT_RELATIONS_FETCHED("DOCUMENT_200_6", "문서 관계 그래프를 조회했습니다.");
 
     private final String code;
     private final String message;

@@ -2,11 +2,13 @@ package com.lion._iozoo.document.presentation.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lion._iozoo.document.application.result.DocumentRaciEntry;
+import com.lion._iozoo.document.application.result.DocumentRelationExploreResult;
 import com.lion._iozoo.document.application.usecase.*;
 import com.lion._iozoo.document.domain.Document;
 import com.lion._iozoo.document.domain.DocumentRelation;
 import com.lion._iozoo.document.domain.DocumentStatus;
 import com.lion._iozoo.document.domain.RaciRole;
+import com.lion._iozoo.document.domain.RelationDirection;
 import com.lion._iozoo.document.domain.RelationType;
 import com.lion._iozoo.document.presentation.api.request.CreateDocumentRelationRequest;
 import com.lion._iozoo.document.presentation.api.request.CreateDocumentRequest;
@@ -70,6 +72,9 @@ class DocumentControllerTest {
 
     @MockBean
     private CreateDocumentRelationUseCase createDocumentRelationUseCase;
+
+    @MockBean
+    private GetDocumentRelationsUseCase getDocumentRelationsUseCase;
 
     @MockBean
     private JwtTokenProvider jwtTokenProvider;
@@ -240,5 +245,22 @@ class DocumentControllerTest {
                 .andExpect(jsonPath("$.data.sourceDocumentId").value(100L))
                 .andExpect(jsonPath("$.data.targetDocumentId").value(200L))
                 .andExpect(jsonPath("$.data.relationType").value("REFERENCE"));
+    }
+
+    @Test
+    @DisplayName("GET /documents/{documentId}/relations - 문서 관계 그래프 탐색 성공")
+    void getDocumentRelations_success() throws Exception {
+        DocumentRelationExploreResult result = new DocumentRelationExploreResult(
+                1L, RelationDirection.OUTGOING, RelationType.REFERENCE, 200L, "이웃 문서", java.time.LocalDateTime.now());
+        given(getDocumentRelationsUseCase.explore(eq(USER_ID), eq(100L))).willReturn(List.of(result));
+
+        mockMvc.perform(get("/documents/100/relations")
+                        .with(authentication(authToken())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("DOCUMENT_200_6"))
+                .andExpect(jsonPath("$.data[0].relationId").value(1L))
+                .andExpect(jsonPath("$.data[0].direction").value("OUTGOING"))
+                .andExpect(jsonPath("$.data[0].neighborDocumentId").value(200L))
+                .andExpect(jsonPath("$.data[0].neighborTitle").value("이웃 문서"));
     }
 }
