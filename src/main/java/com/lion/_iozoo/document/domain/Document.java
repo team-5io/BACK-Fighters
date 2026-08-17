@@ -34,7 +34,8 @@ public class Document {
         this.content = content;
     }
 
-    public void markOfficial() {
+    public void markOfficial(String content) {
+        this.content = content;
         this.status = DocumentStatus.OFFICIAL;
     }
 }

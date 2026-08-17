@@ -3,6 +3,7 @@ package com.lion._iozoo.docpr.application.service;
 import com.lion._iozoo.docpr.application.command.MergeDocPrCommand;
 import com.lion._iozoo.docpr.application.port.out.LoadDocPrPort;
 import com.lion._iozoo.docpr.application.port.out.MarkDocumentOfficialPort;
+import com.lion._iozoo.docpr.application.port.out.RecordDocumentVersionPort;
 import com.lion._iozoo.docpr.application.port.out.SaveDocPrPort;
 import com.lion._iozoo.docpr.application.port.out.SaveDocPrStatusHistoryPort;
 import com.lion._iozoo.docpr.application.usecase.MergeDocPrUseCase;
@@ -27,6 +28,7 @@ public class MergeDocPrService implements MergeDocPrUseCase {
     private final SaveDocPrPort saveDocPrPort;
     private final SaveDocPrStatusHistoryPort saveDocPrStatusHistoryPort;
     private final MarkDocumentOfficialPort markDocumentOfficialPort;
+    private final RecordDocumentVersionPort recordDocumentVersionPort;
 
     // 원 스펙의 Merge 차단 규칙(DocumentLion 반려·사람리뷰 미완료·충돌 미해결)은 해당 기능 미구현으로
     // 이번 범위에서는 검사하지 않는다. APPROVED 상태 여부만 확인한다 (merge-check와 동일 기준).
@@ -51,7 +53,8 @@ public class MergeDocPrService implements MergeDocPrUseCase {
             docPr.merge(LocalDateTime.now());
 
             DocPr saved = saveDocPrPort.save(docPr);
-            markDocumentOfficialPort.markOfficial(docPr.getDocumentId());
+            markDocumentOfficialPort.markOfficial(docPr.getDocumentId(), docPr.getProposedContent());
+            recordDocumentVersionPort.record(docPr.getDocumentId(), docPr.getProposedContent(), docPr.getId());
             saveDocPrStatusHistoryPort.save(command.docPrId(), fromStatus, DocPrStatus.MERGED, userId, null);
 
             log.info("event=docpr_merge_완료 userId={}, docPrId={}, documentId={}",
