@@ -83,11 +83,12 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 | 전체 구조, 패키지 위치, 의존 방향 | `docs/ARCHITECTURE.md` | 레이어 구조, 레이어 간 의존 방향, Port/Adapter 사용 기준 |
 | 도메인 기능 추가·수정, 도메인 간 협업 | `docs/MODULES.md` | 도메인 소유권, 담당 범위, 공개 Application API |
 | Controller API 추가·수정 | `docs/API_CONTRACT.md` | URI, HTTP Method, 요청·응답 형식, 인증·인가, 버전 규칙 |
-| Entity, Repository, 테이블, Flyway 마이그레이션 변경 | `docs/DATABASE.md` | 시간대 정책, 담당자별 마이그레이션 버전 규칙 |
+| Entity, Repository, 테이블, `schema.sql` 변경 | `docs/DATABASE.md` | 시간대 정책, `schema.sql` 컨벤션(컬럼 변경 시 로컬 DB 재생성 필요) |
 | 예외·오류 응답 변경 | `docs/ERROR_HANDLING.md` | `ErrorCode`, 예외 계층, HTTP 응답 형식 |
 | Service 메서드 로깅 추가·수정 | `docs/LOGGING_CONVENTION.md` | 이벤트명 규칙(`_시작`/`_완료`/`_실패`), 적용 대상 |
 | Superpowers 스킬(brainstorming/writing-plans 등) 사용 여부 판단 | `docs/AI_WORKFLOW_GUIDE.md` | 작업 위험도별 FAST/STANDARD/FULL 절차 선택 기준 |
-| 기능/API 전체 목록, 스펙 | 노션 [Doc PR 기능명세서](https://app.notion.com/p/3b2ae0172cdb81e6a077f3bdc9a2f0ac), [Doc PR API 명세서](https://app.notion.com/p/3b3ae0172cdb8150a7c2dda116a12e0f) | 요구사항·기능·스펙 전체 목록, 엔드포인트별 우선순위·구현 상태 |
+| API 명세서 작성 | `docs/templates/API_SPEC_TEMPLATE.md`, `docs/api-specs/` | Notion 복사용 양식, 실제 Controller·DTO·Security·예외 코드 기준의 요청·응답·실패 코드. 기능 구현+테스트 통과 후 작성, 도메인별 파일(`<도메인>_api_spec.md`)에 엔드포인트 단위로 `## ` 섹션 추가 |
+| 기능/API 전체 목록, 스펙 | 노션 [Doc PR 기능명세서](https://app.notion.com/p/3b2ae0172cdb81e6a077f3bdc9a2f0ac), [멋사 해커톤 API 명세서](https://www.notion.so/3bcae0172cdb80d4b4cfee05b6a256e4) | 요구사항·기능·스펙 전체 목록, 엔드포인트별 우선순위·구현 상태. **주의**: 개인 워크스페이스에 스키마가 동일한 사본이 여러 개 있으니 반드시 이 URL로 확인할 것 |
 
 문서가 없거나 현재 코드와 불일치하면, 추측으로 구현하지 않는다. 불일치 사항과 영향을 받는 도메인을 먼저 알리고 방향을 확인한다.
 

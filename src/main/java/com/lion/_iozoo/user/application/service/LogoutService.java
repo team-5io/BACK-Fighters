@@ -3,8 +3,10 @@ package com.lion._iozoo.user.application.service;
 import com.lion._iozoo.global.security.JwtBlacklist;
 import com.lion._iozoo.user.application.usecase.LogoutUseCase;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LogoutService implements LogoutUseCase {
@@ -13,7 +15,15 @@ public class LogoutService implements LogoutUseCase {
 
     @Override
     public void logout(String accessToken) {
-        // 프론트엔드에서 보낸 토큰을 블랙리스트에 등록하여 무효화 처리
-        jwtBlacklist.add(accessToken);
+        // 토큰 값 자체는 민감정보라 로그에 남기지 않는다.
+        log.info("event=user_logout_시작");
+
+        try {
+            jwtBlacklist.add(accessToken);
+            log.info("event=user_logout_완료");
+        } catch (RuntimeException e) {
+            log.warn("event=user_logout_실패 reason={}", e.getMessage(), e);
+            throw e;
+        }
     }
 }
