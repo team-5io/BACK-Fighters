@@ -5,6 +5,7 @@ import com.lion._iozoo.document.application.command.CreateDocumentRelationComman
 import com.lion._iozoo.document.application.command.RaciAssignmentCommand;
 import com.lion._iozoo.document.application.command.SetDocumentRaciCommand;
 import com.lion._iozoo.document.application.command.UpdateDocumentCommand;
+import com.lion._iozoo.document.application.result.DocumentImpactResult;
 import com.lion._iozoo.document.application.result.DocumentRaciEntry;
 import com.lion._iozoo.document.application.result.DocumentRelationExploreResult;
 import com.lion._iozoo.document.application.usecase.*;
@@ -15,6 +16,7 @@ import com.lion._iozoo.document.presentation.api.request.CreateDocumentRelationR
 import com.lion._iozoo.document.presentation.api.request.CreateDocumentRequest;
 import com.lion._iozoo.document.presentation.api.request.SetDocumentRaciRequest;
 import com.lion._iozoo.document.presentation.api.request.UpdateDocumentRequest;
+import com.lion._iozoo.document.presentation.api.response.DocumentImpactResponse;
 import com.lion._iozoo.document.presentation.api.response.DocumentRaciResponse;
 import com.lion._iozoo.document.presentation.api.response.DocumentRelationExploreResponse;
 import com.lion._iozoo.document.presentation.api.response.DocumentRelationResponse;
@@ -47,6 +49,7 @@ public class DocumentController {
     private final SetDocumentRaciUseCase setDocumentRaciUseCase;
     private final CreateDocumentRelationUseCase createDocumentRelationUseCase;
     private final GetDocumentRelationsUseCase getDocumentRelationsUseCase;
+    private final AnalyzeDocumentImpactUseCase analyzeDocumentImpactUseCase;
 
     @Operation(summary = "문서 생성", description = "팀 공간에 DRAFT 상태의 새 문서를 생성한다.")
     @PostMapping
@@ -174,5 +177,20 @@ public class DocumentController {
                 .toList();
 
         return GlobalApiResponse.ok(DocumentResponseCode.DOCUMENT_RELATIONS_FETCHED, response);
+    }
+
+    @Operation(summary = "Impact Analysis 조회", description = "문서 수정 시 영향받는 연결 문서 목록을 관계 그래프에서 다단계로 탐색해 조회한다. 지정 참여자 전용 문서는 작성자 본인이 아니면 숨기고, 그 문서를 통한 하위 탐색도 하지 않는다.")
+    @GetMapping("/{documentId}/impact")
+    public GlobalApiResponse<List<DocumentImpactResponse>> getDocumentImpact(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long documentId) {
+
+        List<DocumentImpactResult> results = analyzeDocumentImpactUseCase.analyze(authUser.userId(), documentId);
+
+        List<DocumentImpactResponse> response = results.stream()
+                .map(DocumentImpactResponse::from)
+                .toList();
+
+        return GlobalApiResponse.ok(DocumentResponseCode.DOCUMENT_IMPACT_FETCHED, response);
     }
 }

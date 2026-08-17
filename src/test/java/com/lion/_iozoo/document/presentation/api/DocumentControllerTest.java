@@ -1,6 +1,7 @@
 package com.lion._iozoo.document.presentation.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lion._iozoo.document.application.result.DocumentImpactResult;
 import com.lion._iozoo.document.application.result.DocumentRaciEntry;
 import com.lion._iozoo.document.application.result.DocumentRelationExploreResult;
 import com.lion._iozoo.document.application.usecase.*;
@@ -75,6 +76,9 @@ class DocumentControllerTest {
 
     @MockBean
     private GetDocumentRelationsUseCase getDocumentRelationsUseCase;
+
+    @MockBean
+    private AnalyzeDocumentImpactUseCase analyzeDocumentImpactUseCase;
 
     @MockBean
     private JwtTokenProvider jwtTokenProvider;
@@ -262,5 +266,20 @@ class DocumentControllerTest {
                 .andExpect(jsonPath("$.data[0].direction").value("OUTGOING"))
                 .andExpect(jsonPath("$.data[0].neighborDocumentId").value(200L))
                 .andExpect(jsonPath("$.data[0].neighborTitle").value("이웃 문서"));
+    }
+
+    @Test
+    @DisplayName("GET /documents/{documentId}/impact - Impact Analysis 조회 성공")
+    void getDocumentImpact_success() throws Exception {
+        DocumentImpactResult result = new DocumentImpactResult(300L, "영향받는 문서", 2);
+        given(analyzeDocumentImpactUseCase.analyze(eq(USER_ID), eq(100L))).willReturn(List.of(result));
+
+        mockMvc.perform(get("/documents/100/impact")
+                        .with(authentication(authToken())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("DOCUMENT_200_7"))
+                .andExpect(jsonPath("$.data[0].documentId").value(300L))
+                .andExpect(jsonPath("$.data[0].title").value("영향받는 문서"))
+                .andExpect(jsonPath("$.data[0].depth").value(2));
     }
 }
