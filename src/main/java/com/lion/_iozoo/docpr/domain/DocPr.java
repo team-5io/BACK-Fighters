@@ -14,10 +14,13 @@ public class DocPr {
     private String proposedContent;
     private DocPrStatus status;
     private LocalDateTime mergedAt;
+    private boolean exceptionMerge;
+    private String exceptionReason;
 
     @Builder
     private DocPr(Long id, Long documentId, Long requesterId, Long approverId,
-                  String proposedContent, DocPrStatus status, LocalDateTime mergedAt) {
+                  String proposedContent, DocPrStatus status, LocalDateTime mergedAt,
+                  boolean exceptionMerge, String exceptionReason) {
         this.id = id;
         this.documentId = documentId;
         this.requesterId = requesterId;
@@ -25,6 +28,8 @@ public class DocPr {
         this.proposedContent = proposedContent;
         this.status = status;
         this.mergedAt = mergedAt;
+        this.exceptionMerge = exceptionMerge;
+        this.exceptionReason = exceptionReason;
     }
 
     public boolean isTerminal() {
@@ -61,5 +66,12 @@ public class DocPr {
 
     public void changeApprover(Long newApproverId) {
         this.approverId = newApproverId;
+    }
+
+    public void mergeWithException(LocalDateTime mergedAt, String reason) {
+        this.status = DocPrStatus.MERGED;
+        this.mergedAt = mergedAt;
+        this.exceptionMerge = true;
+        this.exceptionReason = reason;
     }
 }
