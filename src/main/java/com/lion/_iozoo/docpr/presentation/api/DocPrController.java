@@ -1,5 +1,6 @@
 package com.lion._iozoo.docpr.presentation.api;
 
+import com.lion._iozoo.docpr.application.command.AddDocPrReviewCommand;
 import com.lion._iozoo.docpr.application.command.ApproveDocPrCommand;
 import com.lion._iozoo.docpr.application.command.ChangeDocPrApproverCommand;
 import com.lion._iozoo.docpr.application.command.CreateDocPrCommand;
@@ -7,7 +8,9 @@ import com.lion._iozoo.docpr.application.command.MergeDocPrCommand;
 import com.lion._iozoo.docpr.application.command.RejectDocPrCommand;
 import com.lion._iozoo.docpr.application.command.ResubmitDocPrCommand;
 import com.lion._iozoo.docpr.application.result.DocPrHistoryEntry;
+import com.lion._iozoo.docpr.application.result.DocPrReview;
 import com.lion._iozoo.docpr.application.result.MergeCheckResult;
+import com.lion._iozoo.docpr.application.usecase.AddDocPrReviewUseCase;
 import com.lion._iozoo.docpr.application.usecase.ApproveDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.ChangeDocPrApproverUseCase;
 import com.lion._iozoo.docpr.application.usecase.CreateDocPrUseCase;
@@ -19,12 +22,14 @@ import com.lion._iozoo.docpr.application.usecase.RejectDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.ResubmitDocPrUseCase;
 import com.lion._iozoo.docpr.domain.DocPr;
 import com.lion._iozoo.docpr.presentation.api.common.DocPrResponseCode;
+import com.lion._iozoo.docpr.presentation.api.request.AddDocPrReviewRequest;
 import com.lion._iozoo.docpr.presentation.api.request.ChangeDocPrApproverRequest;
 import com.lion._iozoo.docpr.presentation.api.request.CreateDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.request.RejectDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.request.ResubmitDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.response.DocPrHistoryResponse;
 import com.lion._iozoo.docpr.presentation.api.response.DocPrResponse;
+import com.lion._iozoo.docpr.presentation.api.response.DocPrReviewResponse;
 import com.lion._iozoo.docpr.presentation.api.response.MergeCheckResponse;
 import com.lion._iozoo.global.presentation.GlobalApiResponse;
 import com.lion._iozoo.global.security.AuthUser;
@@ -58,6 +63,7 @@ public class DocPrController {
     private final MergeDocPrUseCase mergeDocPrUseCase;
     private final GetDocPrHistoryUseCase getDocPrHistoryUseCase;
     private final ChangeDocPrApproverUseCase changeDocPrApproverUseCase;
+    private final AddDocPrReviewUseCase addDocPrReviewUseCase;
 
     @Operation(summary = "초안 → Doc PR 전환", description = "문서 작성자(R)가 초안을 Doc PR로 전환하고 승인권자(A)를 지정한다.")
     @PostMapping("/documents/{documentId}/doc-prs")
@@ -179,5 +185,19 @@ public class DocPrController {
         DocPr docPr = changeDocPrApproverUseCase.changeApprover(authUser.userId(), command);
 
         return GlobalApiResponse.ok(DocPrResponseCode.DOC_PR_APPROVER_CHANGED, DocPrResponse.from(docPr));
+    }
+
+    @Operation(summary = "리뷰어 의견 등록", description = "리뷰어가 Doc PR에 리뷰 의견을 남긴다.")
+    @PostMapping("/doc-prs/{prId}/human-reviews")
+    public GlobalApiResponse<DocPrReviewResponse> addDocPrReview(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long prId,
+            @RequestBody @Valid AddDocPrReviewRequest request) {
+
+        AddDocPrReviewCommand command = new AddDocPrReviewCommand(prId, request.comment());
+
+        DocPrReview review = addDocPrReviewUseCase.addReview(authUser.userId(), command);
+
+        return GlobalApiResponse.created(DocPrResponseCode.DOC_PR_REVIEW_CREATED, DocPrReviewResponse.from(review));
     }
 }
