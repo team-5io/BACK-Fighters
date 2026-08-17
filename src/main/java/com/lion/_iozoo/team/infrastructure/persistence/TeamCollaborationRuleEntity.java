@@ -36,12 +36,8 @@ public class TeamCollaborationRuleEntity extends BaseTimeEntity {
         this.status = status;
     }
 
-    public void updateContent(String content) {
+    public void update(String content, CollaborationRuleStatus status) {
         this.content = content;
-        this.status = CollaborationRuleStatus.DRAFT;
-    }
-
-    public void adopt() {
-        this.status = CollaborationRuleStatus.ADOPTED;
+        this.status = status;
     }
 }

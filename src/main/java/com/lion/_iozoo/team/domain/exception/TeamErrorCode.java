@@ -11,9 +11,7 @@ public enum TeamErrorCode implements ErrorCode {
     INVITED_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "TEAM_404_1", "가입되지 않은 이메일입니다."),
     ALREADY_TEAM_MEMBER(HttpStatus.CONFLICT, "TEAM_409_1", "이미 팀에 소속된 유저입니다."),
     TEAM_NOT_FOUND(HttpStatus.NOT_FOUND, "TEAM_404_2", "팀을 찾을 수 없습니다."),
-    TEAM_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "TEAM_404_3", "팀에 소속되지 않은 유저입니다."),
-    COLLABORATION_RULE_NOT_FOUND(HttpStatus.NOT_FOUND, "TEAM_404_4", "협업 규칙을 찾을 수 없습니다."),
-    COLLABORATION_RULE_ALREADY_ADOPTED(HttpStatus.CONFLICT, "TEAM_409_2", "이미 채택된 협업 규칙입니다.");
+    TEAM_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "TEAM_404_3", "팀에 소속되지 않은 유저입니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

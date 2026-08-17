@@ -3,7 +3,6 @@ package com.lion._iozoo.team.application.service;
 import com.lion._iozoo.team.application.TeamPermissionChecker;
 import com.lion._iozoo.team.application.command.UpsertCollaborationRuleCommand;
 import com.lion._iozoo.team.application.usecase.UpsertCollaborationRuleUseCase;
-import com.lion._iozoo.team.domain.CollaborationRuleStatus;
 import com.lion._iozoo.team.infrastructure.persistence.TeamCollaborationRuleEntity;
 import com.lion._iozoo.team.infrastructure.persistence.TeamCollaborationRuleRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,15 +34,15 @@ public class UpsertCollaborationRuleService implements UpsertCollaborationRuleUs
                         TeamCollaborationRuleEntity.builder()
                                 .teamId(teamId)
                                 .content(command.content())
-                                .status(CollaborationRuleStatus.DRAFT)
+                                .status(command.status())
                                 .build()
                 );
             } else {
-                // 검토되지 않은 수정이 채택 상태로 남지 않도록, 수정하면 항상 DRAFT로 되돌린다.
-                rule.updateContent(command.content());
+                rule.update(command.content(), command.status());
             }
 
-            log.info("event=collaboration_rule_upsert_완료 teamId={}, userId={}", teamId, userId);
+            log.info("event=collaboration_rule_upsert_완료 teamId={}, userId={}, status={}",
+                    teamId, userId, command.status());
             return rule;
         } catch (RuntimeException e) {
             log.warn("event=collaboration_rule_upsert_실패 teamId={}, userId={}, reason={}", teamId, userId, e.getMessage(), e);

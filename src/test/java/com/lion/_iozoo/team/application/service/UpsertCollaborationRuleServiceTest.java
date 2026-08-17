@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -33,11 +34,12 @@ class UpsertCollaborationRuleServiceTest {
     }
 
     @Test
-    void 규칙이_없으면_DRAFT로_새로_생성한다() {
+    void 규칙이_없으면_지정한_내용_상태로_새로_생성한다() {
         when(teamCollaborationRuleRepository.findByTeamId(1L)).thenReturn(Optional.empty());
         when(teamCollaborationRuleRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        TeamCollaborationRuleEntity result = sut().upsert(1L, 10L, new UpsertCollaborationRuleCommand("새 규칙"));
+        TeamCollaborationRuleEntity result = sut().upsert(1L, 10L,
+                new UpsertCollaborationRuleCommand("새 규칙", CollaborationRuleStatus.DRAFT));
 
         assertThat(result.getContent()).isEqualTo("새 규칙");
         assertThat(result.getStatus()).isEqualTo(CollaborationRuleStatus.DRAFT);
@@ -45,26 +47,28 @@ class UpsertCollaborationRuleServiceTest {
     }
 
     @Test
-    void 이미_ADOPTED된_규칙을_수정하면_DRAFT로_되돌린다() {
-        TeamCollaborationRuleEntity adopted = TeamCollaborationRuleEntity.builder()
-                .id(1L).teamId(1L).content("기존 규칙").status(CollaborationRuleStatus.ADOPTED)
+    void 규칙이_있으면_내용과_상태를_그대로_덮어쓴다() {
+        TeamCollaborationRuleEntity existing = TeamCollaborationRuleEntity.builder()
+                .id(1L).teamId(1L).content("기존 규칙").status(CollaborationRuleStatus.DRAFT)
                 .build();
-        when(teamCollaborationRuleRepository.findByTeamId(1L)).thenReturn(Optional.of(adopted));
+        when(teamCollaborationRuleRepository.findByTeamId(1L)).thenReturn(Optional.of(existing));
 
-        TeamCollaborationRuleEntity result = sut().upsert(1L, 10L, new UpsertCollaborationRuleCommand("수정된 규칙"));
+        TeamCollaborationRuleEntity result = sut().upsert(1L, 10L,
+                new UpsertCollaborationRuleCommand("확정 규칙", CollaborationRuleStatus.ADOPTED));
 
-        assertThat(result.getContent()).isEqualTo("수정된 규칙");
-        assertThat(result.getStatus()).isEqualTo(CollaborationRuleStatus.DRAFT);
-        verify(teamCollaborationRuleRepository, org.mockito.Mockito.never()).save(any());
+        assertThat(result.getContent()).isEqualTo("확정 규칙");
+        assertThat(result.getStatus()).isEqualTo(CollaborationRuleStatus.ADOPTED);
+        verify(teamCollaborationRuleRepository, never()).save(any());
     }
 
     @Test
     void 관리자가_아니면_예외() {
         doThrow(new ForbiddenException()).when(teamPermissionChecker).requireAdmin(1L, 99L);
 
-        assertThatThrownBy(() -> sut().upsert(1L, 99L, new UpsertCollaborationRuleCommand("내용")))
+        assertThatThrownBy(() -> sut().upsert(1L, 99L,
+                new UpsertCollaborationRuleCommand("내용", CollaborationRuleStatus.DRAFT)))
                 .isInstanceOf(ForbiddenException.class);
 
-        verify(teamCollaborationRuleRepository, org.mockito.Mockito.never()).findByTeamId(any());
+        verify(teamCollaborationRuleRepository, never()).findByTeamId(any());
     }
 }

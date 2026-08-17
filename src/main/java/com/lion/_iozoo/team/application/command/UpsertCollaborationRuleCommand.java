@@ -1,4 +1,6 @@
 package com.lion._iozoo.team.application.command;
 
-public record UpsertCollaborationRuleCommand(String content) {
+import com.lion._iozoo.team.domain.CollaborationRuleStatus;
+
+public record UpsertCollaborationRuleCommand(String content, CollaborationRuleStatus status) {
 }
