@@ -8,6 +8,7 @@ import com.lion._iozoo.document.application.usecase.*;
 import com.lion._iozoo.document.domain.Document;
 import com.lion._iozoo.document.domain.DocumentRelation;
 import com.lion._iozoo.document.domain.DocumentStatus;
+import com.lion._iozoo.document.domain.DocumentVersion;
 import com.lion._iozoo.document.domain.RaciRole;
 import com.lion._iozoo.document.domain.RelationDirection;
 import com.lion._iozoo.document.domain.RelationType;
@@ -79,6 +80,9 @@ class DocumentControllerTest {
 
     @MockBean
     private AnalyzeDocumentImpactUseCase analyzeDocumentImpactUseCase;
+
+    @MockBean
+    private GetDocumentVersionsUseCase getDocumentVersionsUseCase;
 
     @MockBean
     private JwtTokenProvider jwtTokenProvider;
@@ -281,5 +285,23 @@ class DocumentControllerTest {
                 .andExpect(jsonPath("$.data[0].documentId").value(300L))
                 .andExpect(jsonPath("$.data[0].title").value("영향받는 문서"))
                 .andExpect(jsonPath("$.data[0].depth").value(2));
+    }
+
+    @Test
+    @DisplayName("GET /documents/{documentId}/versions - 버전 이력 조회 성공")
+    void getDocumentVersions_success() throws Exception {
+        DocumentVersion version = DocumentVersion.builder()
+                .id(1L).documentId(100L).versionNo(2).content("변경된 내용")
+                .docPrId(5L).createdAt(java.time.LocalDateTime.now())
+                .build();
+        given(getDocumentVersionsUseCase.getVersions(eq(USER_ID), eq(100L))).willReturn(List.of(version));
+
+        mockMvc.perform(get("/documents/100/versions")
+                        .with(authentication(authToken())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("DOCUMENT_200_8"))
+                .andExpect(jsonPath("$.data[0].versionNo").value(2))
+                .andExpect(jsonPath("$.data[0].content").value("변경된 내용"))
+                .andExpect(jsonPath("$.data[0].docPrId").value(5L));
     }
 }

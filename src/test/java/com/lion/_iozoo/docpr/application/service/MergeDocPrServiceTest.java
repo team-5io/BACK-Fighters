@@ -3,6 +3,7 @@ package com.lion._iozoo.docpr.application.service;
 import com.lion._iozoo.docpr.application.command.MergeDocPrCommand;
 import com.lion._iozoo.docpr.application.port.out.LoadDocPrPort;
 import com.lion._iozoo.docpr.application.port.out.MarkDocumentOfficialPort;
+import com.lion._iozoo.docpr.application.port.out.RecordDocumentVersionPort;
 import com.lion._iozoo.docpr.application.port.out.SaveDocPrPort;
 import com.lion._iozoo.docpr.application.port.out.SaveDocPrStatusHistoryPort;
 import com.lion._iozoo.docpr.domain.DocPr;
@@ -37,9 +38,12 @@ class MergeDocPrServiceTest {
     private SaveDocPrStatusHistoryPort saveDocPrStatusHistoryPort;
     @Mock
     private MarkDocumentOfficialPort markDocumentOfficialPort;
+    @Mock
+    private RecordDocumentVersionPort recordDocumentVersionPort;
 
     private MergeDocPrService sut() {
-        return new MergeDocPrService(loadDocPrPort, saveDocPrPort, saveDocPrStatusHistoryPort, markDocumentOfficialPort);
+        return new MergeDocPrService(loadDocPrPort, saveDocPrPort, saveDocPrStatusHistoryPort,
+                markDocumentOfficialPort, recordDocumentVersionPort);
     }
 
     private DocPr docPr(DocPrStatus status) {
@@ -59,7 +63,8 @@ class MergeDocPrServiceTest {
 
         assertThat(result.getStatus()).isEqualTo(DocPrStatus.MERGED);
         assertThat(result.getMergedAt()).isNotNull();
-        verify(markDocumentOfficialPort).markOfficial(100L);
+        verify(markDocumentOfficialPort).markOfficial(100L, "제안 내용");
+        verify(recordDocumentVersionPort).record(100L, "제안 내용", 1L);
         verify(saveDocPrStatusHistoryPort).save(eq(1L), eq(DocPrStatus.APPROVED), eq(DocPrStatus.MERGED), eq(20L), isNull());
     }
 
@@ -70,7 +75,8 @@ class MergeDocPrServiceTest {
         assertThatThrownBy(() -> sut().merge(20L, new MergeDocPrCommand(1L)))
                 .isInstanceOf(DocPrNotFoundException.class);
 
-        verify(markDocumentOfficialPort, never()).markOfficial(any());
+        verify(markDocumentOfficialPort, never()).markOfficial(any(), any());
+        verify(recordDocumentVersionPort, never()).record(any(), any(), any());
     }
 
     @Test
@@ -80,7 +86,8 @@ class MergeDocPrServiceTest {
         assertThatThrownBy(() -> sut().merge(99L, new MergeDocPrCommand(1L)))
                 .isInstanceOf(DocPrNotApproverException.class);
 
-        verify(markDocumentOfficialPort, never()).markOfficial(any());
+        verify(markDocumentOfficialPort, never()).markOfficial(any(), any());
+        verify(recordDocumentVersionPort, never()).record(any(), any(), any());
     }
 
     @Test
@@ -90,6 +97,7 @@ class MergeDocPrServiceTest {
         assertThatThrownBy(() -> sut().merge(20L, new MergeDocPrCommand(1L)))
                 .isInstanceOf(DocPrNotApprovedException.class);
 
-        verify(markDocumentOfficialPort, never()).markOfficial(any());
+        verify(markDocumentOfficialPort, never()).markOfficial(any(), any());
+        verify(recordDocumentVersionPort, never()).record(any(), any(), any());
     }
 }

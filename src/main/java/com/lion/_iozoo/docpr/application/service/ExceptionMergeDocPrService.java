@@ -3,6 +3,7 @@ package com.lion._iozoo.docpr.application.service;
 import com.lion._iozoo.docpr.application.command.ExceptionMergeDocPrCommand;
 import com.lion._iozoo.docpr.application.port.out.LoadDocPrPort;
 import com.lion._iozoo.docpr.application.port.out.MarkDocumentOfficialPort;
+import com.lion._iozoo.docpr.application.port.out.RecordDocumentVersionPort;
 import com.lion._iozoo.docpr.application.port.out.SaveDocPrPort;
 import com.lion._iozoo.docpr.application.port.out.SaveDocPrStatusHistoryPort;
 import com.lion._iozoo.docpr.application.usecase.ExceptionMergeDocPrUseCase;
@@ -27,6 +28,7 @@ public class ExceptionMergeDocPrService implements ExceptionMergeDocPrUseCase {
     private final SaveDocPrPort saveDocPrPort;
     private final SaveDocPrStatusHistoryPort saveDocPrStatusHistoryPort;
     private final MarkDocumentOfficialPort markDocumentOfficialPort;
+    private final RecordDocumentVersionPort recordDocumentVersionPort;
 
     // 일반 Merge 확정과 달리 APPROVED 상태가 아니어도 병합할 수 있다 (차단 조건을 예외적으로 건너뜀).
     // 단, 이미 종료된(APPROVED/REJECTED/MERGED) Doc PR은 예외 Merge도 불가능하다.
@@ -51,7 +53,8 @@ public class ExceptionMergeDocPrService implements ExceptionMergeDocPrUseCase {
             docPr.mergeWithException(LocalDateTime.now(), command.reason());
 
             DocPr saved = saveDocPrPort.save(docPr);
-            markDocumentOfficialPort.markOfficial(docPr.getDocumentId());
+            markDocumentOfficialPort.markOfficial(docPr.getDocumentId(), docPr.getProposedContent());
+            recordDocumentVersionPort.record(docPr.getDocumentId(), docPr.getProposedContent(), docPr.getId());
             saveDocPrStatusHistoryPort.save(command.docPrId(), fromStatus, DocPrStatus.MERGED, userId,
                     "[예외 Merge] " + command.reason());
 

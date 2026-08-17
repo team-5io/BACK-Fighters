@@ -11,6 +11,7 @@ import com.lion._iozoo.document.application.result.DocumentRelationExploreResult
 import com.lion._iozoo.document.application.usecase.*;
 import com.lion._iozoo.document.domain.Document;
 import com.lion._iozoo.document.domain.DocumentRelation;
+import com.lion._iozoo.document.domain.DocumentVersion;
 import com.lion._iozoo.document.presentation.api.common.DocumentResponseCode;
 import com.lion._iozoo.document.presentation.api.request.CreateDocumentRelationRequest;
 import com.lion._iozoo.document.presentation.api.request.CreateDocumentRequest;
@@ -21,6 +22,7 @@ import com.lion._iozoo.document.presentation.api.response.DocumentRaciResponse;
 import com.lion._iozoo.document.presentation.api.response.DocumentRelationExploreResponse;
 import com.lion._iozoo.document.presentation.api.response.DocumentRelationResponse;
 import com.lion._iozoo.document.presentation.api.response.DocumentResponse;
+import com.lion._iozoo.document.presentation.api.response.DocumentVersionResponse;
 import com.lion._iozoo.global.presentation.GlobalApiResponse;
 import com.lion._iozoo.global.security.AuthUser;
 import io.swagger.v3.oas.annotations.Operation;
@@ -50,6 +52,7 @@ public class DocumentController {
     private final CreateDocumentRelationUseCase createDocumentRelationUseCase;
     private final GetDocumentRelationsUseCase getDocumentRelationsUseCase;
     private final AnalyzeDocumentImpactUseCase analyzeDocumentImpactUseCase;
+    private final GetDocumentVersionsUseCase getDocumentVersionsUseCase;
 
     @Operation(summary = "문서 생성", description = "팀 공간에 DRAFT 상태의 새 문서를 생성한다.")
     @PostMapping
@@ -192,5 +195,20 @@ public class DocumentController {
                 .toList();
 
         return GlobalApiResponse.ok(DocumentResponseCode.DOCUMENT_IMPACT_FETCHED, response);
+    }
+
+    @Operation(summary = "버전별 변경 이력 조회", description = "공식 문서의 버전별 변경 내용과 연결된 Doc PR 이력을 조회한다.")
+    @GetMapping("/{documentId}/versions")
+    public GlobalApiResponse<List<DocumentVersionResponse>> getDocumentVersions(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long documentId) {
+
+        List<DocumentVersion> versions = getDocumentVersionsUseCase.getVersions(authUser.userId(), documentId);
+
+        List<DocumentVersionResponse> response = versions.stream()
+                .map(DocumentVersionResponse::from)
+                .toList();
+
+        return GlobalApiResponse.ok(DocumentResponseCode.DOCUMENT_VERSIONS_FETCHED, response);
     }
 }

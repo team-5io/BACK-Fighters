@@ -18,14 +18,14 @@ public class DocumentMergeAdapterForDocPr implements MarkDocumentOfficialPort {
 
     /**
      * Consumer: docpr
-     * Purpose: Doc PR Merge 확정 시 문서를 OFFICIAL로 승격
+     * Purpose: Doc PR Merge 확정 시 제안된 content를 문서에 반영하고 OFFICIAL로 승격
      */
     @Override
     @Transactional
-    public void markOfficial(Long documentId) {
+    public void markOfficial(Long documentId, String content) {
         Document document = loadDocumentPort.loadById(documentId)
                 .orElseThrow(() -> new DocumentNotFoundException(documentId));
-        document.markOfficial();
+        document.markOfficial(content);
         saveDocumentPort.save(document);
     }
 }
