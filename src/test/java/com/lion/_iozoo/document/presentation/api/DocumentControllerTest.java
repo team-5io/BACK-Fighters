@@ -6,6 +6,7 @@ import com.lion._iozoo.document.application.result.DocumentRaciEntry;
 import com.lion._iozoo.document.application.result.DocumentRelationExploreResult;
 import com.lion._iozoo.document.application.result.MyDocumentPermissionResult;
 import com.lion._iozoo.document.application.usecase.*;
+import com.lion._iozoo.document.domain.Block;
 import com.lion._iozoo.document.domain.Document;
 import com.lion._iozoo.document.domain.DocumentAccessLevel;
 import com.lion._iozoo.document.domain.DocumentRelation;
@@ -126,7 +127,8 @@ class DocumentControllerTest {
         Document document = sampleDocument();
         given(createDocumentUseCase.create(eq(USER_ID), any())).willReturn(document);
 
-        CreateDocumentRequest request = new CreateDocumentRequest(1L, "테스트 문서", "테스트 내용");
+        CreateDocumentRequest request = new CreateDocumentRequest(1L, "테스트 문서",
+                List.of(Block.builder().id("b1").type("paragraph").content("테스트 내용").build()));
 
         mockMvc.perform(post("/documents")
                         .with(authentication(authToken()))
@@ -154,7 +156,8 @@ class DocumentControllerTest {
                 .build();
         given(updateDocumentUseCase.update(eq(USER_ID), eq(100L), any())).willReturn(updatedDoc);
 
-        UpdateDocumentRequest request = new UpdateDocumentRequest("수정된 제목", "수정된 내용");
+        UpdateDocumentRequest request = new UpdateDocumentRequest("수정된 제목",
+                List.of(Block.builder().id("b1").type("paragraph").content("수정된 내용").build()));
 
         mockMvc.perform(patch("/documents/100")
                         .with(authentication(authToken()))

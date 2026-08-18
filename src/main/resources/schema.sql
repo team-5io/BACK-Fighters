@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS documents (
     team_id       BIGINT       NOT NULL,
     author_id     BIGINT       NOT NULL COMMENT '최초 작성자',
     title         VARCHAR(255) NOT NULL,
-    content       LONGTEXT     NULL COMMENT '현재 공식 버전 내용(머지된 최신본)',
+    content       LONGTEXT     NULL COMMENT '블록 본문에서 파생된 평문 캐시(검색용) — 진짜 본문은 blocks 테이블',
     status        ENUM('DRAFT', 'OFFICIAL') NOT NULL DEFAULT 'DRAFT',
     is_restricted BOOLEAN      NOT NULL DEFAULT FALSE COMMENT '지정 참여자 전용 문서 여부(RACI 배정 시 TRUE)',
     created_at    DATETIME     NOT NULL,
@@ -55,6 +55,20 @@ CREATE TABLE IF NOT EXISTS documents (
     CONSTRAINT fk_documents_team FOREIGN KEY (team_id) REFERENCES teams (id),
     CONSTRAINT fk_documents_author FOREIGN KEY (author_id) REFERENCES users (id)
 ) ENGINE=InnoDB COMMENT '문서';
+
+CREATE TABLE IF NOT EXISTS blocks (
+    id              VARCHAR(64)  PRIMARY KEY COMMENT 'FE가 생성하는 블록 id',
+    document_id     BIGINT       NOT NULL,
+    parent_block_id VARCHAR(64)  NULL COMMENT '상위 블록 id(최상위면 NULL). 문서 저장 시 전체 삭제 후 재삽입하므로 FK 제약 없음',
+    sort_order      INT          NOT NULL COMMENT '같은 부모 안에서의 순서',
+    type            VARCHAR(20)  NOT NULL COMMENT 'paragraph/heading1~3/bulleted/numbered/todo/toggle/quote/code/divider',
+    content         TEXT         NULL,
+    checked         BOOLEAN      NULL COMMENT 'todo 전용',
+    collapsed       BOOLEAN      NULL COMMENT 'toggle 전용',
+    language        VARCHAR(20)  NULL COMMENT 'code 전용',
+    CONSTRAINT fk_blocks_document FOREIGN KEY (document_id) REFERENCES documents (id),
+    INDEX idx_blocks_document (document_id)
+) ENGINE=InnoDB COMMENT '문서 블록(노션 스타일 에디터)';
 
 CREATE TABLE IF NOT EXISTS document_versions (
     id           BIGINT AUTO_INCREMENT PRIMARY KEY,

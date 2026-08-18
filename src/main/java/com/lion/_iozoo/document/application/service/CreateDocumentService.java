@@ -36,7 +36,8 @@ public class CreateDocumentService implements CreateDocumentUseCase {
                     .teamId(command.teamId())
                     .authorId(userId)
                     .title(command.title())
-                    .content(command.content())
+                    .content(Document.flattenText(command.blocks()))
+                    .blocks(command.blocks())
                     .status(DocumentStatus.DRAFT)
                     .restricted(false)
                     .build();
