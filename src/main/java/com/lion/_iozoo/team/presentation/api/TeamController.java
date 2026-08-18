@@ -7,6 +7,7 @@ import com.lion._iozoo.team.application.command.InviteTeamMemberCommand;
 import com.lion._iozoo.team.application.command.UpsertCollaborationRuleCommand;
 import com.lion._iozoo.team.application.usecase.CreateTeamUseCase;
 import com.lion._iozoo.team.application.usecase.InviteTeamMemberUseCase;
+import com.lion._iozoo.team.application.usecase.ListMyTeamsUseCase;
 import com.lion._iozoo.team.application.usecase.ListTeamMembersUseCase;
 import com.lion._iozoo.team.application.usecase.RemoveTeamMemberUseCase;
 import com.lion._iozoo.team.application.usecase.UpsertCollaborationRuleUseCase;
@@ -47,6 +48,18 @@ public class TeamController {
     private final RemoveTeamMemberUseCase removeTeamMemberUseCase;
     private final ListTeamMembersUseCase listTeamMembersUseCase;
     private final UpsertCollaborationRuleUseCase upsertCollaborationRuleUseCase;
+    private final ListMyTeamsUseCase listMyTeamsUseCase;
+
+    @Operation(summary = "내가 소속된 팀 목록 조회", description = "로그인한 유저가 속한 팀 목록을 조회한다.")
+    @GetMapping("/me")
+    public GlobalApiResponse<List<TeamResponse>> listMyTeams(@AuthenticationPrincipal AuthUser authUser) {
+        List<TeamResponse> teams = listMyTeamsUseCase.listMyTeams(authUser.userId())
+                .stream()
+                .map(TeamResponse::from)
+                .toList();
+
+        return GlobalApiResponse.ok(TeamResponseCode.MY_TEAMS_FETCHED, teams);
+    }
 
     @Operation(summary = "팀 생성", description = "새 협업 팀 공간을 생성한다. 생성자는 자동으로 ADMIN이 된다.")
     @PostMapping

@@ -10,7 +10,8 @@ public enum UserResponseCode implements ResponseCode {
     SIGNUP_SUCCESS("USER_201_1", "회원가입에 성공했습니다."),
     LOGIN_SUCCESS("USER_200_1", "로그인에 성공했습니다."),
     LOGOUT_SUCCESS("USER_200_2", "로그아웃되었습니다."),
-    PROFILE_UPDATED("USER_200_3", "프로필이 수정되었습니다.");
+    PROFILE_UPDATED("USER_200_3", "프로필이 수정되었습니다."),
+    PROFILE_FETCHED("USER_200_4", "프로필을 조회했습니다.");
 
     private final String code;
     private final String message;
