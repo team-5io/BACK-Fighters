@@ -16,6 +16,7 @@ import com.lion._iozoo.docpr.application.usecase.ApproveDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.ChangeDocPrApproverUseCase;
 import com.lion._iozoo.docpr.application.usecase.CreateDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.ExceptionMergeDocPrUseCase;
+import com.lion._iozoo.docpr.application.usecase.GetAiReviewUseCase;
 import com.lion._iozoo.docpr.application.result.NextAssigneeInfoResult;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrHistoryUseCase;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrReviewsUseCase;
@@ -24,7 +25,9 @@ import com.lion._iozoo.docpr.application.usecase.GetNextAssigneeInfoUseCase;
 import com.lion._iozoo.docpr.application.usecase.MergeCheckDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.MergeDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.RejectDocPrUseCase;
+import com.lion._iozoo.docpr.application.usecase.RequestAiReviewUseCase;
 import com.lion._iozoo.docpr.application.usecase.ResubmitDocPrUseCase;
+import com.lion._iozoo.docpr.domain.AiReview;
 import com.lion._iozoo.docpr.domain.DocPr;
 import com.lion._iozoo.docpr.presentation.api.common.DocPrResponseCode;
 import com.lion._iozoo.docpr.presentation.api.request.AddDocPrReviewRequest;
@@ -33,6 +36,7 @@ import com.lion._iozoo.docpr.presentation.api.request.CreateDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.request.ExceptionMergeDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.request.RejectDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.request.ResubmitDocPrRequest;
+import com.lion._iozoo.docpr.presentation.api.response.AiReviewResponse;
 import com.lion._iozoo.docpr.presentation.api.response.DocPrHistoryResponse;
 import com.lion._iozoo.docpr.presentation.api.response.DocPrResponse;
 import com.lion._iozoo.docpr.presentation.api.response.DocPrReviewResponse;
@@ -74,6 +78,8 @@ public class DocPrController {
     private final ExceptionMergeDocPrUseCase exceptionMergeDocPrUseCase;
     private final GetDocPrReviewsUseCase getDocPrReviewsUseCase;
     private final GetNextAssigneeInfoUseCase getNextAssigneeInfoUseCase;
+    private final RequestAiReviewUseCase requestAiReviewUseCase;
+    private final GetAiReviewUseCase getAiReviewUseCase;
 
     @Operation(summary = "초안 → Doc PR 전환", description = "문서 작성자(R)가 초안을 Doc PR로 전환하고 승인권자(A)를 지정한다.")
     @PostMapping("/documents/{documentId}/doc-prs")
@@ -248,5 +254,27 @@ public class DocPrController {
         NextAssigneeInfoResult result = getNextAssigneeInfoUseCase.getInfo(authUser.userId(), prId);
 
         return GlobalApiResponse.ok(DocPrResponseCode.NEXT_ASSIGNEE_INFO_FETCHED, NextAssigneeInfoResponse.from(result));
+    }
+
+    @Operation(summary = "AI 리뷰 요청", description = "DocumentLion에게 문서 충돌·정합성·협업 규칙 위반 여부를 검토받는다. 같은 Doc PR로 재요청하면 이전 결과를 덮어쓴다.")
+    @PostMapping("/doc-prs/{prId}/ai-review")
+    public GlobalApiResponse<AiReviewResponse> requestAiReview(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long prId) {
+
+        AiReview review = requestAiReviewUseCase.request(authUser.userId(), prId);
+
+        return GlobalApiResponse.ok(DocPrResponseCode.AI_REVIEW_REQUESTED, AiReviewResponse.from(review));
+    }
+
+    @Operation(summary = "AI 리뷰 결과 조회", description = "저장된 DocumentLion 검토 결과를 다시 조회한다.")
+    @GetMapping("/doc-prs/{prId}/ai-review")
+    public GlobalApiResponse<AiReviewResponse> getAiReview(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long prId) {
+
+        AiReview review = getAiReviewUseCase.getByDocPrId(authUser.userId(), prId);
+
+        return GlobalApiResponse.ok(DocPrResponseCode.AI_REVIEW_FETCHED, AiReviewResponse.from(review));
     }
 }
