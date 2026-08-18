@@ -27,3 +27,8 @@ jwt:
   secret: ${JWT_SECRET}
   # 액세스 토큰 만료 시간 (밀리초 단위, 기본값 3600000 = 1시간)
   access-token-validity-in-milliseconds: ${JWT_ACCESS_TOKEN_VALIDITY_IN_MILLISECONDS:3600000}
+
+ai-gateway:
+  # AI-Fighters 서버 base URL (team-5io/AI-Fighters). 아직 실제 주소가 없어 기본값은 빈 문자열 —
+  # 채워지기 전까지는 호출이 항상 실패하고 502로 처리된다.
+  base-url: ${AI_GATEWAY_BASE_URL:}

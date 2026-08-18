@@ -3,19 +3,23 @@ package com.lion._iozoo.document.presentation.api;
 import com.lion._iozoo.document.application.command.CreateDocumentCommand;
 import com.lion._iozoo.document.application.command.CreateDocumentRelationCommand;
 import com.lion._iozoo.document.application.command.RaciAssignmentCommand;
+import com.lion._iozoo.document.application.command.RequestTranslationCommand;
 import com.lion._iozoo.document.application.command.SetDocumentRaciCommand;
 import com.lion._iozoo.document.application.command.UpdateDocumentCommand;
 import com.lion._iozoo.document.application.result.DocumentImpactResult;
 import com.lion._iozoo.document.application.result.DocumentRaciEntry;
 import com.lion._iozoo.document.application.result.DocumentRelationExploreResult;
 import com.lion._iozoo.document.application.result.MyDocumentPermissionResult;
+import com.lion._iozoo.document.application.result.RequestTranslationResult;
 import com.lion._iozoo.document.application.usecase.*;
 import com.lion._iozoo.document.domain.Document;
 import com.lion._iozoo.document.domain.DocumentRelation;
 import com.lion._iozoo.document.domain.DocumentVersion;
+import com.lion._iozoo.document.domain.Translation;
 import com.lion._iozoo.document.presentation.api.common.DocumentResponseCode;
 import com.lion._iozoo.document.presentation.api.request.CreateDocumentRelationRequest;
 import com.lion._iozoo.document.presentation.api.request.CreateDocumentRequest;
+import com.lion._iozoo.document.presentation.api.request.RequestTranslationRequest;
 import com.lion._iozoo.document.presentation.api.request.SetDocumentRaciRequest;
 import com.lion._iozoo.document.presentation.api.request.UpdateDocumentRequest;
 import com.lion._iozoo.document.presentation.api.response.DocumentImpactResponse;
@@ -25,6 +29,7 @@ import com.lion._iozoo.document.presentation.api.response.DocumentRelationRespon
 import com.lion._iozoo.document.presentation.api.response.DocumentResponse;
 import com.lion._iozoo.document.presentation.api.response.DocumentVersionResponse;
 import com.lion._iozoo.document.presentation.api.response.MyDocumentPermissionResponse;
+import com.lion._iozoo.document.presentation.api.response.TranslationResponse;
 import com.lion._iozoo.global.presentation.GlobalApiResponse;
 import com.lion._iozoo.global.security.AuthUser;
 import io.swagger.v3.oas.annotations.Operation;
@@ -56,6 +61,8 @@ public class DocumentController {
     private final AnalyzeDocumentImpactUseCase analyzeDocumentImpactUseCase;
     private final GetDocumentVersionsUseCase getDocumentVersionsUseCase;
     private final GetMyDocumentPermissionUseCase getMyDocumentPermissionUseCase;
+    private final RequestTranslationUseCase requestTranslationUseCase;
+    private final GetTranslationUseCase getTranslationUseCase;
 
     @Operation(summary = "문서 생성", description = "팀 공간에 DRAFT 상태의 새 문서를 생성한다.")
     @PostMapping
@@ -225,5 +232,34 @@ public class DocumentController {
 
         return GlobalApiResponse.ok(DocumentResponseCode.DOCUMENT_MY_PERMISSION_FETCHED,
                 MyDocumentPermissionResponse.from(result));
+    }
+
+    @Operation(summary = "개발 요소 보존 번역 요청", description = "코드블록·API명·변수명은 보존하고 나머지만 번역한다(Dev-aware Translation, AI-Fighters 프록시). 같은 문서·대상 언어로 이미 번역한 적 있으면 캐시된 결과를 즉시 반환한다.")
+    @PostMapping("/{documentId}/translations")
+    public GlobalApiResponse<TranslationResponse> requestTranslation(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long documentId,
+            @RequestBody @Valid RequestTranslationRequest request) {
+
+        RequestTranslationCommand command = new RequestTranslationCommand(
+                request.content(), request.sourceLanguage(), request.targetLanguage());
+
+        RequestTranslationResult result = requestTranslationUseCase.translate(authUser.userId(), documentId, command);
+
+        return GlobalApiResponse.ok(DocumentResponseCode.TRANSLATION_REQUESTED,
+                TranslationResponse.from(result.translation(), result.cached()));
+    }
+
+    @Operation(summary = "번역 결과 원문 대조 조회", description = "저장된 번역 결과를 원문과 대조할 수 있도록 다시 조회한다.")
+    @GetMapping("/{documentId}/translations/{translationId}")
+    public GlobalApiResponse<TranslationResponse> getTranslation(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long documentId,
+            @PathVariable Long translationId) {
+
+        Translation translation = getTranslationUseCase.getById(authUser.userId(), documentId, translationId);
+
+        return GlobalApiResponse.ok(DocumentResponseCode.TRANSLATION_FETCHED,
+                TranslationResponse.from(translation, true));
     }
 }
