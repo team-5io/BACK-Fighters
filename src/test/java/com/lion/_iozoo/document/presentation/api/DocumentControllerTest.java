@@ -171,6 +171,20 @@ class DocumentControllerTest {
     }
 
     @Test
+    @DisplayName("PATCH /documents/{documentId} - blocks 누락 시 400 (NPE 방지)")
+    void updateDocument_blocksNull_returns400() throws Exception {
+        String requestJson = "{\"title\":\"수정된 제목\"}";
+
+        mockMvc.perform(patch("/documents/100")
+                        .with(authentication(authToken()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON_400_1"));
+    }
+
+    @Test
     @DisplayName("DELETE /documents/{documentId} - 문서 삭제 성공")
     void deleteDocument_success() throws Exception {
         willDoNothing().given(deleteDocumentUseCase).delete(USER_ID, 100L);
