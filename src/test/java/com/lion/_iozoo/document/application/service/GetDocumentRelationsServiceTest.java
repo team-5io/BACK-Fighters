@@ -1,13 +1,17 @@
 package com.lion._iozoo.document.application.service;
 
 import com.lion._iozoo.document.application.port.out.LoadDocumentPort;
+import com.lion._iozoo.document.application.port.out.LoadDocumentRaciPort;
 import com.lion._iozoo.document.application.port.out.LoadDocumentRelationsPort;
+import com.lion._iozoo.document.application.result.DocumentRaciEntry;
 import com.lion._iozoo.document.application.result.DocumentRelationExploreResult;
 import com.lion._iozoo.document.domain.Document;
 import com.lion._iozoo.document.domain.DocumentRelation;
 import com.lion._iozoo.document.domain.DocumentStatus;
+import com.lion._iozoo.document.domain.RaciRole;
 import com.lion._iozoo.document.domain.RelationDirection;
 import com.lion._iozoo.document.domain.RelationType;
+import com.lion._iozoo.document.domain.exception.DocumentAccessDeniedException;
 import com.lion._iozoo.document.domain.exception.DocumentNotFoundException;
 import com.lion._iozoo.global.exception.ForbiddenException;
 import com.lion._iozoo.team.application.TeamPermissionChecker;
@@ -33,10 +37,12 @@ class GetDocumentRelationsServiceTest {
     @Mock
     private LoadDocumentRelationsPort loadDocumentRelationsPort;
     @Mock
+    private LoadDocumentRaciPort loadDocumentRaciPort;
+    @Mock
     private TeamPermissionChecker teamPermissionChecker;
 
     private GetDocumentRelationsService sut() {
-        return new GetDocumentRelationsService(loadDocumentPort, loadDocumentRelationsPort, teamPermissionChecker);
+        return new GetDocumentRelationsService(loadDocumentPort, loadDocumentRelationsPort, loadDocumentRaciPort, teamPermissionChecker);
     }
 
     private Document document(Long id, Long authorId, boolean restricted) {
@@ -112,5 +118,55 @@ class GetDocumentRelationsServiceTest {
 
         assertThatThrownBy(() -> sut().explore(99L, 100L))
                 .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void anchor_문서에_접근권한이_없으면_예외() {
+        when(loadDocumentPort.loadById(100L)).thenReturn(Optional.of(document(100L, 99L, true)));
+
+        assertThatThrownBy(() -> sut().explore(1L, 100L))
+                .isInstanceOf(DocumentAccessDeniedException.class);
+    }
+
+    @Test
+    void restricted_이웃_문서라도_RACI_R_A_C면_보인다() {
+        when(loadDocumentPort.loadById(100L)).thenReturn(Optional.of(document(100L, 1L, false)));
+        when(loadDocumentRaciPort.loadByDocumentId(100L)).thenReturn(List.of());
+        when(loadDocumentRelationsPort.loadByDocumentId(100L)).thenReturn(List.of(
+                relation(1L, 100L, 200L)
+        ));
+        when(loadDocumentPort.loadById(200L)).thenReturn(Optional.of(document(200L, 99L, true)));
+        when(loadDocumentRaciPort.loadByDocumentId(200L)).thenReturn(List.of(
+                new DocumentRaciEntry(1L, RaciRole.C, 99L, LocalDateTime.now())
+        ));
+
+        List<DocumentRelationExploreResult> result = sut().explore(1L, 100L);
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void restricted_이웃_문서에서_I는_초안이면_숨기고_공식문서면_보인다() {
+        when(loadDocumentPort.loadById(100L)).thenReturn(Optional.of(document(100L, 1L, false)));
+        when(loadDocumentRaciPort.loadByDocumentId(100L)).thenReturn(List.of());
+        when(loadDocumentRelationsPort.loadByDocumentId(100L)).thenReturn(List.of(
+                relation(1L, 100L, 200L)
+        ));
+        Document draftNeighbor = document(200L, 99L, true);
+        when(loadDocumentPort.loadById(200L)).thenReturn(Optional.of(draftNeighbor));
+        when(loadDocumentRaciPort.loadByDocumentId(200L)).thenReturn(List.of(
+                new DocumentRaciEntry(1L, RaciRole.I, 99L, LocalDateTime.now())
+        ));
+
+        assertThat(sut().explore(1L, 100L)).isEmpty();
+
+        Document officialNeighbor = Document.builder()
+                .id(200L).teamId(1L).authorId(99L)
+                .title("문서200").content("내용")
+                .status(DocumentStatus.OFFICIAL).restricted(true)
+                .build();
+        when(loadDocumentPort.loadById(200L)).thenReturn(Optional.of(officialNeighbor));
+
+        assertThat(sut().explore(1L, 100L)).hasSize(1);
     }
 }

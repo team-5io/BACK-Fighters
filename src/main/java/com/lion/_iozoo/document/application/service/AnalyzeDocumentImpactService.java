@@ -1,11 +1,14 @@
 package com.lion._iozoo.document.application.service;
 
 import com.lion._iozoo.document.application.port.out.LoadDocumentPort;
+import com.lion._iozoo.document.application.port.out.LoadDocumentRaciPort;
 import com.lion._iozoo.document.application.port.out.LoadDocumentRelationsPort;
 import com.lion._iozoo.document.application.result.DocumentImpactResult;
 import com.lion._iozoo.document.application.usecase.AnalyzeDocumentImpactUseCase;
 import com.lion._iozoo.document.domain.Document;
+import com.lion._iozoo.document.domain.DocumentAccessLevel;
 import com.lion._iozoo.document.domain.DocumentRelation;
+import com.lion._iozoo.document.domain.exception.DocumentAccessDeniedException;
 import com.lion._iozoo.document.domain.exception.DocumentNotFoundException;
 import com.lion._iozoo.team.application.TeamPermissionChecker;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +31,7 @@ public class AnalyzeDocumentImpactService implements AnalyzeDocumentImpactUseCas
 
     private final LoadDocumentPort loadDocumentPort;
     private final LoadDocumentRelationsPort loadDocumentRelationsPort;
+    private final LoadDocumentRaciPort loadDocumentRaciPort;
     private final TeamPermissionChecker teamPermissionChecker;
 
     @Override
@@ -40,6 +44,10 @@ public class AnalyzeDocumentImpactService implements AnalyzeDocumentImpactUseCas
                     .orElseThrow(() -> new DocumentNotFoundException(documentId));
 
             teamPermissionChecker.requireMember(anchor.getTeamId(), userId);
+
+            if (accessLevelOf(anchor, userId) == DocumentAccessLevel.NONE) {
+                throw new DocumentAccessDeniedException(documentId);
+            }
 
             List<DocumentImpactResult> results = breadthFirstSearch(documentId, userId);
 
@@ -80,7 +88,7 @@ public class AnalyzeDocumentImpactService implements AnalyzeDocumentImpactUseCas
                     if (neighbor.isEmpty()) {
                         continue;
                     }
-                    if (neighbor.get().isRestricted() && !neighbor.get().getAuthorId().equals(userId)) {
+                    if (accessLevelOf(neighbor.get(), userId) == DocumentAccessLevel.NONE) {
                         continue;
                     }
 
@@ -103,5 +111,10 @@ public class AnalyzeDocumentImpactService implements AnalyzeDocumentImpactUseCas
         return relation.getSourceDocumentId().equals(documentId)
                 ? relation.getTargetDocumentId()
                 : relation.getSourceDocumentId();
+    }
+
+    private DocumentAccessLevel accessLevelOf(Document document, Long userId) {
+        var role = RaciRoleLookup.roleOf(loadDocumentRaciPort.loadByDocumentId(document.getId()), userId);
+        return document.resolveAccessLevel(userId, role);
     }
 }

@@ -175,6 +175,7 @@ CREATE TABLE IF NOT EXISTS translations (
     source_language    VARCHAR(10)  NOT NULL,
     target_language    VARCHAR(10)  NOT NULL,
     translated_content LONGTEXT     NOT NULL COMMENT '코드블록/식별자는 원문 보존, 나머지만 번역',
+    preserved_terms    TEXT         NULL COMMENT '원문 그대로 보존된 코드 토큰 목록(콤마 구분), AI 응답의 preservedTerms',
     created_at         DATETIME     NOT NULL,
     CONSTRAINT fk_translations_document FOREIGN KEY (document_id) REFERENCES documents (id)
 ) ENGINE=InnoDB COMMENT 'Dev-aware Translation 결과';

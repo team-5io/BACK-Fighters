@@ -18,7 +18,8 @@ public enum DocPrResponseCode implements ResponseCode {
     DOC_PR_APPROVER_CHANGED("DOCPR_200_8", "승인권자가 변경되었습니다."),
     DOC_PR_REVIEW_CREATED("DOCPR_201_2", "리뷰 의견이 등록되었습니다."),
     DOC_PR_EXCEPTION_MERGED("DOCPR_200_9", "Doc PR이 예외적으로 병합 확정되었습니다."),
-    DOC_PR_REVIEWS_FETCHED("DOCPR_200_10", "리뷰 의견 목록을 조회했습니다.");
+    DOC_PR_REVIEWS_FETCHED("DOCPR_200_10", "리뷰 의견 목록을 조회했습니다."),
+    NEXT_ASSIGNEE_INFO_FETCHED("DOCPR_200_11", "다음 작업자 정보를 조회했습니다.");
 
     private final String code;
     private final String message;

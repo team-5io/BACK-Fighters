@@ -1,12 +1,15 @@
 package com.lion._iozoo.document.application.service;
 
+import com.lion._iozoo.document.application.port.out.LoadDocumentRaciPort;
 import com.lion._iozoo.document.application.port.out.LoadDocumentRelationsPort;
 import com.lion._iozoo.document.application.port.out.LoadDocumentPort;
 import com.lion._iozoo.document.application.result.DocumentRelationExploreResult;
 import com.lion._iozoo.document.application.usecase.GetDocumentRelationsUseCase;
 import com.lion._iozoo.document.domain.Document;
+import com.lion._iozoo.document.domain.DocumentAccessLevel;
 import com.lion._iozoo.document.domain.DocumentRelation;
 import com.lion._iozoo.document.domain.RelationDirection;
+import com.lion._iozoo.document.domain.exception.DocumentAccessDeniedException;
 import com.lion._iozoo.document.domain.exception.DocumentNotFoundException;
 import com.lion._iozoo.team.application.TeamPermissionChecker;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +27,7 @@ public class GetDocumentRelationsService implements GetDocumentRelationsUseCase 
 
     private final LoadDocumentPort loadDocumentPort;
     private final LoadDocumentRelationsPort loadDocumentRelationsPort;
+    private final LoadDocumentRaciPort loadDocumentRaciPort;
     private final TeamPermissionChecker teamPermissionChecker;
 
     @Override
@@ -36,6 +40,10 @@ public class GetDocumentRelationsService implements GetDocumentRelationsUseCase 
                     .orElseThrow(() -> new DocumentNotFoundException(documentId));
 
             teamPermissionChecker.requireMember(anchor.getTeamId(), userId);
+
+            if (accessLevelOf(anchor, userId) == DocumentAccessLevel.NONE) {
+                throw new DocumentAccessDeniedException(documentId);
+            }
 
             List<DocumentRelation> relations = loadDocumentRelationsPort.loadByDocumentId(documentId);
 
@@ -53,13 +61,13 @@ public class GetDocumentRelationsService implements GetDocumentRelationsUseCase 
         }
     }
 
-    // 이웃 문서가 restricted이고 요청자가 작성자가 아니면 결과에서 숨긴다.
+    // 이웃 문서의 RACI 접근수준이 NONE이면 결과에서 숨긴다.
     private Optional<DocumentRelationExploreResult> toVisibleResult(DocumentRelation relation, Long documentId, Long userId) {
         boolean outgoing = relation.getSourceDocumentId().equals(documentId);
         Long neighborId = outgoing ? relation.getTargetDocumentId() : relation.getSourceDocumentId();
 
         return loadDocumentPort.loadById(neighborId)
-                .filter(neighbor -> !neighbor.isRestricted() || neighbor.getAuthorId().equals(userId))
+                .filter(neighbor -> accessLevelOf(neighbor, userId) != DocumentAccessLevel.NONE)
                 .map(neighbor -> new DocumentRelationExploreResult(
                         relation.getId(),
                         outgoing ? RelationDirection.OUTGOING : RelationDirection.INCOMING,
@@ -68,5 +76,10 @@ public class GetDocumentRelationsService implements GetDocumentRelationsUseCase 
                         neighbor.getTitle(),
                         relation.getCreatedAt()
                 ));
+    }
+
+    private DocumentAccessLevel accessLevelOf(Document document, Long userId) {
+        var role = RaciRoleLookup.roleOf(loadDocumentRaciPort.loadByDocumentId(document.getId()), userId);
+        return document.resolveAccessLevel(userId, role);
     }
 }

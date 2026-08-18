@@ -1,10 +1,12 @@
 package com.lion._iozoo.docpr.application.service;
 
+import com.lion._iozoo.docpr.application.port.out.CheckDocumentAccessPort;
 import com.lion._iozoo.docpr.application.port.out.DocumentSummary;
 import com.lion._iozoo.docpr.application.port.out.LoadDocPrPort;
 import com.lion._iozoo.docpr.application.port.out.LoadDocumentForDocPrPort;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrUseCase;
 import com.lion._iozoo.docpr.domain.DocPr;
+import com.lion._iozoo.docpr.domain.exception.DocPrAccessDeniedException;
 import com.lion._iozoo.docpr.domain.exception.DocPrDocumentNotFoundException;
 import com.lion._iozoo.docpr.domain.exception.DocPrNotFoundException;
 import com.lion._iozoo.team.application.TeamPermissionChecker;
@@ -20,6 +22,7 @@ public class GetDocPrService implements GetDocPrUseCase {
 
     private final LoadDocPrPort loadDocPrPort;
     private final LoadDocumentForDocPrPort loadDocumentForDocPrPort;
+    private final CheckDocumentAccessPort checkDocumentAccessPort;
     private final TeamPermissionChecker teamPermissionChecker;
 
     @Override
@@ -31,12 +34,15 @@ public class GetDocPrService implements GetDocPrUseCase {
             DocPr docPr = loadDocPrPort.loadById(docPrId)
                     .orElseThrow(() -> new DocPrNotFoundException(docPrId));
 
-            // 조회 권한은 R/A/C/I 전부(기능명세서 "Doc PR 상세/상태 조회" 사용 계층 기준) —
-            // RACI 세분화가 아직 없으므로 문서가 속한 팀의 팀원이면 누구나 조회 가능하게 구현.
             DocumentSummary document = loadDocumentForDocPrPort.loadSummary(docPr.getDocumentId())
                     .orElseThrow(() -> new DocPrDocumentNotFoundException(docPr.getDocumentId()));
 
             teamPermissionChecker.requireMember(document.teamId(), userId);
+
+            // Doc PR·검토 근거는 문서 접근수준이 FULL(작성자/R/A/C)인 경우만 조회 가능 — I·역할없음은 차단.
+            if (!checkDocumentAccessPort.hasFullAccess(docPr.getDocumentId(), userId)) {
+                throw new DocPrAccessDeniedException(docPrId);
+            }
 
             log.info("event=docpr_get_완료 userId={}, docPrId={}", userId, docPrId);
             return docPr;

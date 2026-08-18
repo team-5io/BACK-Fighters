@@ -1,5 +1,6 @@
 package com.lion._iozoo.docpr.application.service;
 
+import com.lion._iozoo.docpr.application.port.out.CheckDocumentAccessPort;
 import com.lion._iozoo.docpr.application.port.out.DocumentSummary;
 import com.lion._iozoo.docpr.application.port.out.LoadDocPrPort;
 import com.lion._iozoo.docpr.application.port.out.LoadDocPrReviewsPort;
@@ -7,6 +8,7 @@ import com.lion._iozoo.docpr.application.port.out.LoadDocumentForDocPrPort;
 import com.lion._iozoo.docpr.application.result.DocPrReview;
 import com.lion._iozoo.docpr.domain.DocPr;
 import com.lion._iozoo.docpr.domain.DocPrStatus;
+import com.lion._iozoo.docpr.domain.exception.DocPrAccessDeniedException;
 import com.lion._iozoo.docpr.domain.exception.DocPrNotFoundException;
 import com.lion._iozoo.global.exception.ForbiddenException;
 import com.lion._iozoo.team.application.TeamPermissionChecker;
@@ -34,10 +36,12 @@ class GetDocPrReviewsServiceTest {
     @Mock
     private LoadDocPrReviewsPort loadDocPrReviewsPort;
     @Mock
+    private CheckDocumentAccessPort checkDocumentAccessPort;
+    @Mock
     private TeamPermissionChecker teamPermissionChecker;
 
     private GetDocPrReviewsService sut() {
-        return new GetDocPrReviewsService(loadDocPrPort, loadDocumentForDocPrPort, loadDocPrReviewsPort, teamPermissionChecker);
+        return new GetDocPrReviewsService(loadDocPrPort, loadDocumentForDocPrPort, loadDocPrReviewsPort, checkDocumentAccessPort, teamPermissionChecker);
     }
 
     private DocPr docPr() {
@@ -52,6 +56,7 @@ class GetDocPrReviewsServiceTest {
         when(loadDocPrPort.loadById(1L)).thenReturn(Optional.of(docPr()));
         when(loadDocumentForDocPrPort.loadSummary(100L))
                 .thenReturn(Optional.of(new DocumentSummary(100L, 1L, 10L, false)));
+        when(checkDocumentAccessPort.hasFullAccess(100L, 5L)).thenReturn(true);
         List<DocPrReview> reviews = List.of(
                 new DocPrReview(1L, 1L, 5L, "의견1", LocalDateTime.now()),
                 new DocPrReview(2L, 1L, 20L, "의견2", LocalDateTime.now())
@@ -81,5 +86,16 @@ class GetDocPrReviewsServiceTest {
 
         assertThatThrownBy(() -> sut().getReviews(99L, 1L))
                 .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void 문서_접근권한이_FULL이_아니면_예외() {
+        when(loadDocPrPort.loadById(1L)).thenReturn(Optional.of(docPr()));
+        when(loadDocumentForDocPrPort.loadSummary(100L))
+                .thenReturn(Optional.of(new DocumentSummary(100L, 1L, 10L, false)));
+        when(checkDocumentAccessPort.hasFullAccess(100L, 40L)).thenReturn(false);
+
+        assertThatThrownBy(() -> sut().getReviews(40L, 1L))
+                .isInstanceOf(DocPrAccessDeniedException.class);
     }
 }
