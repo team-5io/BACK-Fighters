@@ -11,9 +11,10 @@ import com.lion._iozoo.team.application.usecase.ListMyTeamsUseCase;
 import com.lion._iozoo.team.application.usecase.ListTeamMembersUseCase;
 import com.lion._iozoo.team.application.usecase.RemoveTeamMemberUseCase;
 import com.lion._iozoo.team.application.usecase.UpsertCollaborationRuleUseCase;
+import com.lion._iozoo.team.application.result.TeamMemberResult;
+import com.lion._iozoo.team.domain.TeamRole;
 import com.lion._iozoo.team.infrastructure.persistence.TeamCollaborationRuleEntity;
 import com.lion._iozoo.team.infrastructure.persistence.TeamEntity;
-import com.lion._iozoo.team.infrastructure.persistence.TeamMemberEntity;
 import com.lion._iozoo.team.presentation.api.common.TeamResponseCode;
 import com.lion._iozoo.team.presentation.api.request.CreateTeamRequest;
 import com.lion._iozoo.team.presentation.api.request.InviteTeamMemberRequest;
@@ -55,7 +56,7 @@ public class TeamController {
     public GlobalApiResponse<List<TeamResponse>> listMyTeams(@AuthenticationPrincipal AuthUser authUser) {
         List<TeamResponse> teams = listMyTeamsUseCase.listMyTeams(authUser.userId())
                 .stream()
-                .map(TeamResponse::from)
+                .map(result -> TeamResponse.from(result.team(), result.role()))
                 .toList();
 
         return GlobalApiResponse.ok(TeamResponseCode.MY_TEAMS_FETCHED, teams);
@@ -70,7 +71,7 @@ public class TeamController {
         CreateTeamCommand command = new CreateTeamCommand(request.name());
         TeamEntity team = createTeamUseCase.createTeam(authUser.userId(), command);
 
-        return GlobalApiResponse.created(TeamResponseCode.TEAM_CREATED, TeamResponse.from(team));
+        return GlobalApiResponse.created(TeamResponseCode.TEAM_CREATED, TeamResponse.from(team, TeamRole.ADMIN));
     }
 
     @Operation(summary = "팀원 초대", description = "ADMIN이 이미 가입된 유저를 이메일로 팀에 초대해 MEMBER로 등록한다.")
@@ -81,7 +82,7 @@ public class TeamController {
             @RequestBody @Valid InviteTeamMemberRequest request) {
 
         InviteTeamMemberCommand command = new InviteTeamMemberCommand(request.email());
-        TeamMemberEntity teamMember = inviteTeamMemberUseCase.invite(teamId, authUser.userId(), command);
+        TeamMemberResult teamMember = inviteTeamMemberUseCase.invite(teamId, authUser.userId(), command);
 
         return GlobalApiResponse.created(TeamResponseCode.TEAM_MEMBER_INVITED, TeamMemberResponse.from(teamMember));
     }

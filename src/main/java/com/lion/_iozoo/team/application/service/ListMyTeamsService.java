@@ -1,6 +1,8 @@
 package com.lion._iozoo.team.application.service;
 
+import com.lion._iozoo.team.application.result.MyTeamResult;
 import com.lion._iozoo.team.application.usecase.ListMyTeamsUseCase;
+import com.lion._iozoo.team.domain.TeamRole;
 import com.lion._iozoo.team.infrastructure.persistence.TeamEntity;
 import com.lion._iozoo.team.infrastructure.persistence.TeamMemberEntity;
 import com.lion._iozoo.team.infrastructure.persistence.TeamMemberRepository;
@@ -10,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,12 +24,15 @@ public class ListMyTeamsService implements ListMyTeamsUseCase {
 
     @Override
     @Transactional(readOnly = true)
-    public List<TeamEntity> listMyTeams(Long userId) {
-        List<Long> teamIds = teamMemberRepository.findAllByUserId(userId)
-                .stream()
-                .map(TeamMemberEntity::getTeamId)
-                .toList();
+    public List<MyTeamResult> listMyTeams(Long userId) {
+        List<TeamMemberEntity> memberships = teamMemberRepository.findAllByUserId(userId);
+        Map<Long, TeamRole> roleByTeamId = memberships.stream()
+                .collect(Collectors.toMap(TeamMemberEntity::getTeamId, TeamMemberEntity::getRole));
 
-        return teamRepository.findAllById(teamIds);
+        List<TeamEntity> teams = teamRepository.findAllById(roleByTeamId.keySet());
+
+        return teams.stream()
+                .map(team -> new MyTeamResult(team, roleByTeamId.get(team.getId())))
+                .toList();
     }
 }

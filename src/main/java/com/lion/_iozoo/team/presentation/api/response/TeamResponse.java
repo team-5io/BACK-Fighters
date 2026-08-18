@@ -1,5 +1,6 @@
 package com.lion._iozoo.team.presentation.api.response;
 
+import com.lion._iozoo.team.domain.TeamRole;
 import com.lion._iozoo.team.infrastructure.persistence.TeamEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -10,12 +11,16 @@ public record TeamResponse(
         Long id,
 
         @Schema(description = "팀 이름", example = "5조 파이터즈")
-        String name
+        String name,
+
+        @Schema(description = "요청자의 이 팀 내 역할", example = "ADMIN")
+        TeamRole role
 ) {
-    public static TeamResponse from(TeamEntity team) {
+    public static TeamResponse from(TeamEntity team, TeamRole role) {
         return TeamResponse.builder()
                 .id(team.getId())
                 .name(team.getName())
+                .role(role)
                 .build();
     }
 }
