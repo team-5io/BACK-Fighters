@@ -11,6 +11,7 @@ public class DocPr {
     private final Long documentId;
     private final Long requesterId;
     private Long approverId;
+    private Long nextAssigneeId;
     private String proposedContent;
     private DocPrStatus status;
     private LocalDateTime mergedAt;
@@ -18,18 +19,23 @@ public class DocPr {
     private String exceptionReason;
 
     @Builder
-    private DocPr(Long id, Long documentId, Long requesterId, Long approverId,
+    private DocPr(Long id, Long documentId, Long requesterId, Long approverId, Long nextAssigneeId,
                   String proposedContent, DocPrStatus status, LocalDateTime mergedAt,
                   boolean exceptionMerge, String exceptionReason) {
         this.id = id;
         this.documentId = documentId;
         this.requesterId = requesterId;
         this.approverId = approverId;
+        this.nextAssigneeId = nextAssigneeId;
         this.proposedContent = proposedContent;
         this.status = status;
         this.mergedAt = mergedAt;
         this.exceptionMerge = exceptionMerge;
         this.exceptionReason = exceptionReason;
+    }
+
+    public boolean needsNextAssignee() {
+        return this.status == DocPrStatus.REVIEWER_NEEDED;
     }
 
     public boolean isTerminal() {

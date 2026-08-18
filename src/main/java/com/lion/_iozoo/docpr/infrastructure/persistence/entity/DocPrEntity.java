@@ -29,6 +29,9 @@ public class DocPrEntity extends BaseTimeEntity {
     @Column(name = "approver_id", nullable = false)
     private Long approverId;
 
+    @Column(name = "next_assignee_id")
+    private Long nextAssigneeId;
+
     @Column(name = "proposed_content", columnDefinition = "LONGTEXT", nullable = false)
     private String proposedContent;
 
@@ -46,13 +49,14 @@ public class DocPrEntity extends BaseTimeEntity {
     private String exceptionReason;
 
     @Builder
-    private DocPrEntity(Long id, Long documentId, Long requesterId, Long approverId,
+    private DocPrEntity(Long id, Long documentId, Long requesterId, Long approverId, Long nextAssigneeId,
                         String proposedContent, DocPrStatus status, LocalDateTime mergedAt,
                         boolean exceptionMerge, String exceptionReason) {
         this.id = id;
         this.documentId = documentId;
         this.requesterId = requesterId;
         this.approverId = approverId;
+        this.nextAssigneeId = nextAssigneeId;
         this.proposedContent = proposedContent;
         this.status = status;
         this.mergedAt = mergedAt;
