@@ -76,6 +76,14 @@ class DocumentPersistenceAdapterTest {
     }
 
     @Test
+    void 문서_삭제시_블록을_먼저_지워서_FK_제약_위반을_방지한다() {
+        sut().deleteById(100L);
+
+        verify(blockJpaRepository).deleteByDocumentId(100L);
+        verify(documentJpaRepository).deleteById(100L);
+    }
+
+    @Test
     void 저장시_기존_블록을_지우고_트리를_평탄화해서_다시_저장한다() {
         when(documentMapper.toEntity(any())).thenReturn(documentEntity());
         when(documentJpaRepository.save(any())).thenReturn(documentEntity());
