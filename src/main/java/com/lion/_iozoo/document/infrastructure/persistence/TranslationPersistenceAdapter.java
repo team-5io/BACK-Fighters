@@ -21,8 +21,8 @@ public class TranslationPersistenceAdapter implements LoadCachedTranslationPort,
     private final TranslationJpaRepository translationJpaRepository;
 
     @Override
-    public Optional<Translation> loadByDocumentIdAndTargetLanguage(Long documentId, String targetLanguage) {
-        return translationJpaRepository.findByDocumentIdAndTargetLanguage(documentId, targetLanguage)
+    public Optional<Translation> loadByDocumentIdAndBlockIdAndTargetLanguage(Long documentId, String blockId, String targetLanguage) {
+        return translationJpaRepository.findByDocumentIdAndBlockIdAndTargetLanguage(documentId, blockId, targetLanguage)
                 .map(this::toDomain);
     }
 
@@ -31,6 +31,7 @@ public class TranslationPersistenceAdapter implements LoadCachedTranslationPort,
         TranslationEntity entity = TranslationEntity.builder()
                 .id(translation.getId())
                 .documentId(translation.getDocumentId())
+                .blockId(translation.getBlockId())
                 .sourceLanguage(translation.getSourceLanguage())
                 .targetLanguage(translation.getTargetLanguage())
                 .translatedContent(translation.getTranslatedContent())
@@ -52,6 +53,7 @@ public class TranslationPersistenceAdapter implements LoadCachedTranslationPort,
         return Translation.builder()
                 .id(entity.getId())
                 .documentId(entity.getDocumentId())
+                .blockId(entity.getBlockId())
                 .sourceLanguage(entity.getSourceLanguage())
                 .targetLanguage(entity.getTargetLanguage())
                 .translatedContent(entity.getTranslatedContent())

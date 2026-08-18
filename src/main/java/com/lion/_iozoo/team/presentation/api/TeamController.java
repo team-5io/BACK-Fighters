@@ -6,14 +6,16 @@ import com.lion._iozoo.team.application.command.CreateTeamCommand;
 import com.lion._iozoo.team.application.command.InviteTeamMemberCommand;
 import com.lion._iozoo.team.application.command.UpsertCollaborationRuleCommand;
 import com.lion._iozoo.team.application.usecase.CreateTeamUseCase;
+import com.lion._iozoo.team.application.usecase.GenerateCharterDraftUseCase;
 import com.lion._iozoo.team.application.usecase.InviteTeamMemberUseCase;
 import com.lion._iozoo.team.application.usecase.ListMyTeamsUseCase;
 import com.lion._iozoo.team.application.usecase.ListTeamMembersUseCase;
 import com.lion._iozoo.team.application.usecase.RemoveTeamMemberUseCase;
 import com.lion._iozoo.team.application.usecase.UpsertCollaborationRuleUseCase;
+import com.lion._iozoo.team.application.result.TeamMemberResult;
+import com.lion._iozoo.team.domain.TeamRole;
 import com.lion._iozoo.team.infrastructure.persistence.TeamCollaborationRuleEntity;
 import com.lion._iozoo.team.infrastructure.persistence.TeamEntity;
-import com.lion._iozoo.team.infrastructure.persistence.TeamMemberEntity;
 import com.lion._iozoo.team.presentation.api.common.TeamResponseCode;
 import com.lion._iozoo.team.presentation.api.request.CreateTeamRequest;
 import com.lion._iozoo.team.presentation.api.request.InviteTeamMemberRequest;
@@ -49,13 +51,14 @@ public class TeamController {
     private final ListTeamMembersUseCase listTeamMembersUseCase;
     private final UpsertCollaborationRuleUseCase upsertCollaborationRuleUseCase;
     private final ListMyTeamsUseCase listMyTeamsUseCase;
+    private final GenerateCharterDraftUseCase generateCharterDraftUseCase;
 
     @Operation(summary = "내가 소속된 팀 목록 조회", description = "로그인한 유저가 속한 팀 목록을 조회한다.")
     @GetMapping("/me")
     public GlobalApiResponse<List<TeamResponse>> listMyTeams(@AuthenticationPrincipal AuthUser authUser) {
         List<TeamResponse> teams = listMyTeamsUseCase.listMyTeams(authUser.userId())
                 .stream()
-                .map(TeamResponse::from)
+                .map(result -> TeamResponse.from(result.team(), result.role()))
                 .toList();
 
         return GlobalApiResponse.ok(TeamResponseCode.MY_TEAMS_FETCHED, teams);
@@ -70,7 +73,7 @@ public class TeamController {
         CreateTeamCommand command = new CreateTeamCommand(request.name());
         TeamEntity team = createTeamUseCase.createTeam(authUser.userId(), command);
 
-        return GlobalApiResponse.created(TeamResponseCode.TEAM_CREATED, TeamResponse.from(team));
+        return GlobalApiResponse.created(TeamResponseCode.TEAM_CREATED, TeamResponse.from(team, TeamRole.ADMIN));
     }
 
     @Operation(summary = "팀원 초대", description = "ADMIN이 이미 가입된 유저를 이메일로 팀에 초대해 MEMBER로 등록한다.")
@@ -81,7 +84,7 @@ public class TeamController {
             @RequestBody @Valid InviteTeamMemberRequest request) {
 
         InviteTeamMemberCommand command = new InviteTeamMemberCommand(request.email());
-        TeamMemberEntity teamMember = inviteTeamMemberUseCase.invite(teamId, authUser.userId(), command);
+        TeamMemberResult teamMember = inviteTeamMemberUseCase.invite(teamId, authUser.userId(), command);
 
         return GlobalApiResponse.created(TeamResponseCode.TEAM_MEMBER_INVITED, TeamMemberResponse.from(teamMember));
     }
@@ -123,5 +126,16 @@ public class TeamController {
         TeamCollaborationRuleEntity rule = upsertCollaborationRuleUseCase.upsert(teamId, authUser.userId(), command);
 
         return GlobalApiResponse.ok(TeamResponseCode.COLLABORATION_RULE_UPSERTED, CollaborationRuleResponse.from(rule));
+    }
+
+    @Operation(summary = "협업 규칙 초안 생성 요청", description = "팀 관리자가 AI(Team Collaboration Charter)에게 협업 규칙 초안 생성을 요청한다. 생성된 여러 규칙을 번호 매긴 목록으로 합쳐 DRAFT 상태로 저장한다(기존 초안이 있으면 덮어씀).")
+    @PostMapping("/{teamId}/charter/draft")
+    public GlobalApiResponse<CollaborationRuleResponse> generateCharterDraft(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long teamId) {
+
+        TeamCollaborationRuleEntity rule = generateCharterDraftUseCase.generate(teamId, authUser.userId());
+
+        return GlobalApiResponse.ok(TeamResponseCode.COLLABORATION_RULE_DRAFT_GENERATED, CollaborationRuleResponse.from(rule));
     }
 }

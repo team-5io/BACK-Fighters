@@ -21,6 +21,9 @@ public class TranslationEntity {
     @Column(name = "document_id", nullable = false)
     private Long documentId;
 
+    @Column(name = "block_id", nullable = false, length = 64)
+    private String blockId;
+
     @Column(name = "source_language", nullable = false)
     private String sourceLanguage;
 
@@ -38,10 +41,11 @@ public class TranslationEntity {
     private LocalDateTime createdAt;
 
     @Builder
-    private TranslationEntity(Long id, Long documentId, String sourceLanguage, String targetLanguage,
+    private TranslationEntity(Long id, Long documentId, String blockId, String sourceLanguage, String targetLanguage,
                               String translatedContent, String preservedTerms, LocalDateTime createdAt) {
         this.id = id;
         this.documentId = documentId;
+        this.blockId = blockId;
         this.sourceLanguage = sourceLanguage;
         this.targetLanguage = targetLanguage;
         this.translatedContent = translatedContent;

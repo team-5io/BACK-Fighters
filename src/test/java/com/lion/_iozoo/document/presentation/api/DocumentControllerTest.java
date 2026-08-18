@@ -1,11 +1,14 @@
 package com.lion._iozoo.document.presentation.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lion._iozoo.document.application.port.out.LoadUserSummaryPort;
+import com.lion._iozoo.document.application.port.out.UserSummary;
 import com.lion._iozoo.document.application.result.DocumentImpactResult;
 import com.lion._iozoo.document.application.result.DocumentRaciEntry;
 import com.lion._iozoo.document.application.result.DocumentRelationExploreResult;
 import com.lion._iozoo.document.application.result.MyDocumentPermissionResult;
 import com.lion._iozoo.document.application.usecase.*;
+import com.lion._iozoo.document.domain.Block;
 import com.lion._iozoo.document.domain.Document;
 import com.lion._iozoo.document.domain.DocumentAccessLevel;
 import com.lion._iozoo.document.domain.DocumentRelation;
@@ -96,6 +99,15 @@ class DocumentControllerTest {
     private GetTranslationUseCase getTranslationUseCase;
 
     @MockBean
+    private RequestWritingSuggestionsUseCase requestWritingSuggestionsUseCase;
+
+    @MockBean
+    private GetDocumentUseCase getDocumentUseCase;
+
+    @MockBean
+    private LoadUserSummaryPort loadUserSummaryPort;
+
+    @MockBean
     private JwtTokenProvider jwtTokenProvider;
 
     @MockBean
@@ -125,8 +137,11 @@ class DocumentControllerTest {
     void createDocument_success() throws Exception {
         Document document = sampleDocument();
         given(createDocumentUseCase.create(eq(USER_ID), any())).willReturn(document);
+        given(loadUserSummaryPort.loadSummariesByUserIds(List.of(USER_ID)))
+                .willReturn(java.util.Map.of(USER_ID, new UserSummary("김재원", "author@b.com")));
 
-        CreateDocumentRequest request = new CreateDocumentRequest(1L, "테스트 문서", "테스트 내용");
+        CreateDocumentRequest request = new CreateDocumentRequest(1L, "테스트 문서",
+                List.of(Block.builder().id("b1").type("paragraph").content("테스트 내용").build()));
 
         mockMvc.perform(post("/documents")
                         .with(authentication(authToken()))
@@ -137,7 +152,28 @@ class DocumentControllerTest {
                 .andExpect(jsonPath("$.code").value("DOCUMENT_201_1"))
                 .andExpect(jsonPath("$.data.id").value(100L))
                 .andExpect(jsonPath("$.data.title").value("테스트 문서"))
-                .andExpect(jsonPath("$.data.status").value("DRAFT"));
+                .andExpect(jsonPath("$.data.status").value("DRAFT"))
+                .andExpect(jsonPath("$.data.assignee.userId").value(USER_ID))
+                .andExpect(jsonPath("$.data.assignee.name").value("김재원"))
+                .andExpect(jsonPath("$.data.assignee.role").value("R"));
+    }
+
+    @Test
+    @DisplayName("GET /documents/{documentId} - 문서 상세조회 성공")
+    void getDocument_success() throws Exception {
+        Document document = sampleDocument();
+        given(getDocumentUseCase.getById(eq(USER_ID), eq(100L))).willReturn(document);
+        given(loadUserSummaryPort.loadSummariesByUserIds(List.of(USER_ID)))
+                .willReturn(java.util.Map.of(USER_ID, new UserSummary("김재원", "author@b.com")));
+
+        mockMvc.perform(get("/documents/100")
+                        .with(authentication(authToken())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("DOCUMENT_200_12"))
+                .andExpect(jsonPath("$.data.id").value(100L))
+                .andExpect(jsonPath("$.data.title").value("테스트 문서"))
+                .andExpect(jsonPath("$.data.assignee.name").value("김재원"))
+                .andExpect(jsonPath("$.data.assignee.role").value("R"));
     }
 
     @Test
@@ -154,7 +190,8 @@ class DocumentControllerTest {
                 .build();
         given(updateDocumentUseCase.update(eq(USER_ID), eq(100L), any())).willReturn(updatedDoc);
 
-        UpdateDocumentRequest request = new UpdateDocumentRequest("수정된 제목", "수정된 내용");
+        UpdateDocumentRequest request = new UpdateDocumentRequest("수정된 제목",
+                List.of(Block.builder().id("b1").type("paragraph").content("수정된 내용").build()));
 
         mockMvc.perform(patch("/documents/100")
                         .with(authentication(authToken()))
@@ -165,6 +202,20 @@ class DocumentControllerTest {
                 .andExpect(jsonPath("$.code").value("DOCUMENT_200_1"))
                 .andExpect(jsonPath("$.data.title").value("수정된 제목"))
                 .andExpect(jsonPath("$.data.content").value("수정된 내용"));
+    }
+
+    @Test
+    @DisplayName("PATCH /documents/{documentId} - blocks 누락 시 400 (NPE 방지)")
+    void updateDocument_blocksNull_returns400() throws Exception {
+        String requestJson = "{\"title\":\"수정된 제목\"}";
+
+        mockMvc.perform(patch("/documents/100")
+                        .with(authentication(authToken()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON_400_1"));
     }
 
     @Test

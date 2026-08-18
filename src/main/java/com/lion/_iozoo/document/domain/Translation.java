@@ -10,6 +10,7 @@ import java.util.List;
 public class Translation {
     private final Long id;
     private final Long documentId;
+    private final String blockId;
     private final String sourceLanguage;
     private final String targetLanguage;
     private final String translatedContent;
@@ -17,10 +18,11 @@ public class Translation {
     private final LocalDateTime createdAt;
 
     @Builder
-    private Translation(Long id, Long documentId, String sourceLanguage, String targetLanguage,
+    private Translation(Long id, Long documentId, String blockId, String sourceLanguage, String targetLanguage,
                          String translatedContent, List<String> preservedTerms, LocalDateTime createdAt) {
         this.id = id;
         this.documentId = documentId;
+        this.blockId = blockId;
         this.sourceLanguage = sourceLanguage;
         this.targetLanguage = targetLanguage;
         this.translatedContent = translatedContent;

@@ -15,6 +15,9 @@ public record TranslationResponse(
         @Schema(description = "문서 ID", example = "100")
         Long documentId,
 
+        @Schema(description = "블록 ID", example = "block-abc123")
+        String blockId,
+
         @Schema(description = "원문 언어 코드", example = "ko")
         String sourceLanguage,
 
@@ -37,6 +40,7 @@ public record TranslationResponse(
         return TranslationResponse.builder()
                 .id(translation.getId())
                 .documentId(translation.getDocumentId())
+                .blockId(translation.getBlockId())
                 .sourceLanguage(translation.getSourceLanguage())
                 .targetLanguage(translation.getTargetLanguage())
                 .translatedContent(translation.getTranslatedContent())

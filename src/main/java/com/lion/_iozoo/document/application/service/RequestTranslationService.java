@@ -34,8 +34,8 @@ public class RequestTranslationService implements RequestTranslationUseCase {
     @Override
     @Transactional
     public RequestTranslationResult translate(Long userId, Long documentId, RequestTranslationCommand command) {
-        log.info("event=translation_request_시작 userId={}, documentId={}, targetLanguage={}",
-                userId, documentId, command.targetLanguage());
+        log.info("event=translation_request_시작 userId={}, documentId={}, blockId={}, targetLanguage={}",
+                userId, documentId, command.blockId(), command.targetLanguage());
 
         try {
             Document document = loadDocumentPort.loadById(documentId)
@@ -44,17 +44,18 @@ public class RequestTranslationService implements RequestTranslationUseCase {
             teamPermissionChecker.requireMember(document.getTeamId(), userId);
 
             Optional<Translation> cached = loadCachedTranslationPort
-                    .loadByDocumentIdAndTargetLanguage(documentId, command.targetLanguage());
+                    .loadByDocumentIdAndBlockIdAndTargetLanguage(documentId, command.blockId(), command.targetLanguage());
             if (cached.isPresent()) {
                 log.info("event=translation_request_완료 userId={}, documentId={}, cached=true", userId, documentId);
                 return new RequestTranslationResult(cached.get(), true);
             }
 
             TranslationGatewayResult gatewayResult = requestTranslationPort.requestTranslation(
-                    documentId, command.content(), command.sourceLanguage(), command.targetLanguage());
+                    documentId, command.blockId(), command.content(), command.sourceLanguage(), command.targetLanguage());
 
             Translation saved = saveTranslationPort.save(Translation.builder()
                     .documentId(documentId)
+                    .blockId(command.blockId())
                     .sourceLanguage(command.sourceLanguage())
                     .targetLanguage(command.targetLanguage())
                     .translatedContent(gatewayResult.translatedContent())

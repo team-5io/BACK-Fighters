@@ -59,37 +59,37 @@ class RequestTranslationServiceTest {
     }
 
     private RequestTranslationCommand command() {
-        return new RequestTranslationCommand("원문", "ko", "en");
+        return new RequestTranslationCommand("block-1", "원문", "ko", "en");
     }
 
     @Test
     void 캐시가_있으면_AI_Gateway를_호출하지_않고_캐시를_반환한다() {
         when(loadDocumentPort.loadById(100L)).thenReturn(Optional.of(document()));
         Translation cached = Translation.builder()
-                .id(1L).documentId(100L).sourceLanguage("ko").targetLanguage("en")
+                .id(1L).documentId(100L).blockId("block-1").sourceLanguage("ko").targetLanguage("en")
                 .translatedContent("cached content").preservedTerms(List.of("RACI"))
                 .createdAt(LocalDateTime.now())
                 .build();
-        when(loadCachedTranslationPort.loadByDocumentIdAndTargetLanguage(100L, "en")).thenReturn(Optional.of(cached));
+        when(loadCachedTranslationPort.loadByDocumentIdAndBlockIdAndTargetLanguage(100L, "block-1", "en")).thenReturn(Optional.of(cached));
 
         RequestTranslationResult result = sut().translate(30L, 100L, command());
 
         assertThat(result.cached()).isTrue();
         assertThat(result.translation().getTranslatedContent()).isEqualTo("cached content");
-        verify(requestTranslationPort, never()).requestTranslation(any(), any(), any(), any());
+        verify(requestTranslationPort, never()).requestTranslation(any(), any(), any(), any(), any());
         verify(saveTranslationPort, never()).save(any());
     }
 
     @Test
     void 캐시가_없으면_AI_Gateway를_호출하고_결과를_저장한다() {
         when(loadDocumentPort.loadById(100L)).thenReturn(Optional.of(document()));
-        when(loadCachedTranslationPort.loadByDocumentIdAndTargetLanguage(100L, "en")).thenReturn(Optional.empty());
-        when(requestTranslationPort.requestTranslation(100L, "원문", "ko", "en"))
+        when(loadCachedTranslationPort.loadByDocumentIdAndBlockIdAndTargetLanguage(100L, "block-1", "en")).thenReturn(Optional.empty());
+        when(requestTranslationPort.requestTranslation(100L, "block-1", "원문", "ko", "en"))
                 .thenReturn(new TranslationGatewayResult("translated", List.of("Doc PR", "RACI")));
         when(saveTranslationPort.save(any())).thenAnswer(invocation -> {
             Translation arg = invocation.getArgument(0);
             return Translation.builder()
-                    .id(1L).documentId(arg.getDocumentId()).sourceLanguage(arg.getSourceLanguage())
+                    .id(1L).documentId(arg.getDocumentId()).blockId(arg.getBlockId()).sourceLanguage(arg.getSourceLanguage())
                     .targetLanguage(arg.getTargetLanguage()).translatedContent(arg.getTranslatedContent())
                     .preservedTerms(arg.getPreservedTerms()).createdAt(arg.getCreatedAt())
                     .build();
@@ -105,8 +105,8 @@ class RequestTranslationServiceTest {
     @Test
     void AI_Gateway_호출이_실패하면_예외가_전파된다() {
         when(loadDocumentPort.loadById(100L)).thenReturn(Optional.of(document()));
-        when(loadCachedTranslationPort.loadByDocumentIdAndTargetLanguage(100L, "en")).thenReturn(Optional.empty());
-        when(requestTranslationPort.requestTranslation(100L, "원문", "ko", "en"))
+        when(loadCachedTranslationPort.loadByDocumentIdAndBlockIdAndTargetLanguage(100L, "block-1", "en")).thenReturn(Optional.empty());
+        when(requestTranslationPort.requestTranslation(100L, "block-1", "원문", "ko", "en"))
                 .thenThrow(new TranslationFailedException(100L, null));
 
         assertThatThrownBy(() -> sut().translate(30L, 100L, command()))
