@@ -85,8 +85,10 @@ public class DocumentPersistenceAdapter implements SaveDocumentPort, LoadDocumen
     }
 
     @Override
+    @Transactional
     public void deleteById(Long documentId) {
         try {
+            blockJpaRepository.deleteByDocumentId(documentId);
             documentJpaRepository.deleteById(documentId);
         } catch (EmptyResultDataAccessException e) {
             throw new DocumentNotFoundException(documentId);
