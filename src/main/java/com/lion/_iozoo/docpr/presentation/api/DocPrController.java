@@ -22,6 +22,7 @@ import com.lion._iozoo.docpr.application.usecase.GetDocPrHistoryUseCase;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrReviewsUseCase;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.GetNextAssigneeInfoUseCase;
+import com.lion._iozoo.docpr.application.usecase.ListDocPrsUseCase;
 import com.lion._iozoo.docpr.application.usecase.MergeCheckDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.MergeDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.RejectDocPrUseCase;
@@ -48,12 +49,16 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -80,6 +85,20 @@ public class DocPrController {
     private final GetNextAssigneeInfoUseCase getNextAssigneeInfoUseCase;
     private final RequestAiReviewUseCase requestAiReviewUseCase;
     private final GetAiReviewUseCase getAiReviewUseCase;
+    private final ListDocPrsUseCase listDocPrsUseCase;
+
+    @Operation(summary = "Doc PR 목록 조회", description = "팀 공간의 Doc PR 목록을 페이지네이션으로 조회한다. 대상 문서에 대한 RACI 접근수준이 FULL(작성자/R/A/C)인 것만 노출된다.")
+    @GetMapping("/doc-prs")
+    public GlobalApiResponse<Page<DocPrResponse>> listDocPrs(
+            @AuthenticationPrincipal AuthUser authUser,
+            @RequestParam Long teamId,
+            @PageableDefault(size = 20) Pageable pageable) {
+
+        Page<DocPrResponse> docPrs = listDocPrsUseCase.list(authUser.userId(), teamId, pageable)
+                .map(DocPrResponse::from);
+
+        return GlobalApiResponse.ok(DocPrResponseCode.DOC_PRS_FETCHED, docPrs);
+    }
 
     @Operation(summary = "초안 → Doc PR 전환", description = "문서 작성자(R)가 초안을 Doc PR로 전환하고 승인권자(A)를 지정한다.")
     @PostMapping("/documents/{documentId}/doc-prs")
