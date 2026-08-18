@@ -14,7 +14,8 @@ public enum DocumentErrorCode implements ErrorCode {
     DOCUMENT_RACI_DUPLICATE_USER(HttpStatus.BAD_REQUEST, "DOCUMENT_400_2", "한 요청에 같은 사용자를 중복해서 지정할 수 없습니다."),
     DOCUMENT_RELATION_SELF_REFERENCE(HttpStatus.BAD_REQUEST, "DOCUMENT_400_3", "자기 자신과의 관계는 만들 수 없습니다."),
     DOCUMENT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "DOCUMENT_403_1", "해당 문서에 대한 접근 권한이 없습니다."),
-    TRANSLATION_FAILED(HttpStatus.BAD_GATEWAY, "DOCUMENT_502_1", "번역 요청이 실패했습니다.");
+    TRANSLATION_FAILED(HttpStatus.BAD_GATEWAY, "DOCUMENT_502_1", "번역 요청이 실패했습니다."),
+    WRITING_ASSISTANT_FAILED(HttpStatus.BAD_GATEWAY, "DOCUMENT_502_2", "글쓰기 제안 요청이 실패했습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

@@ -99,6 +99,9 @@ class DocumentControllerTest {
     private GetTranslationUseCase getTranslationUseCase;
 
     @MockBean
+    private RequestWritingSuggestionsUseCase requestWritingSuggestionsUseCase;
+
+    @MockBean
     private GetDocumentUseCase getDocumentUseCase;
 
     @MockBean
