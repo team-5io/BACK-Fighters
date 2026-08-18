@@ -1,10 +1,12 @@
 package com.lion._iozoo.docpr.application.service;
 
+import com.lion._iozoo.docpr.application.port.out.CheckDocumentAccessPort;
 import com.lion._iozoo.docpr.application.port.out.DocumentSummary;
 import com.lion._iozoo.docpr.application.port.out.LoadDocPrPort;
 import com.lion._iozoo.docpr.application.port.out.LoadDocumentForDocPrPort;
 import com.lion._iozoo.docpr.domain.DocPr;
 import com.lion._iozoo.docpr.domain.DocPrStatus;
+import com.lion._iozoo.docpr.domain.exception.DocPrAccessDeniedException;
 import com.lion._iozoo.docpr.domain.exception.DocPrNotFoundException;
 import com.lion._iozoo.global.exception.ForbiddenException;
 import com.lion._iozoo.team.application.TeamPermissionChecker;
@@ -28,10 +30,12 @@ class GetDocPrServiceTest {
     @Mock
     private LoadDocumentForDocPrPort loadDocumentForDocPrPort;
     @Mock
+    private CheckDocumentAccessPort checkDocumentAccessPort;
+    @Mock
     private TeamPermissionChecker teamPermissionChecker;
 
     private GetDocPrService sut() {
-        return new GetDocPrService(loadDocPrPort, loadDocumentForDocPrPort, teamPermissionChecker);
+        return new GetDocPrService(loadDocPrPort, loadDocumentForDocPrPort, checkDocumentAccessPort, teamPermissionChecker);
     }
 
     private DocPr docPr() {
@@ -46,6 +50,7 @@ class GetDocPrServiceTest {
         when(loadDocPrPort.loadById(1L)).thenReturn(Optional.of(docPr()));
         when(loadDocumentForDocPrPort.loadSummary(100L))
                 .thenReturn(Optional.of(new DocumentSummary(100L, 1L, 10L, true)));
+        when(checkDocumentAccessPort.hasFullAccess(100L, 30L)).thenReturn(true);
 
         DocPr result = sut().getById(30L, 1L);
 
@@ -70,5 +75,16 @@ class GetDocPrServiceTest {
 
         assertThatThrownBy(() -> sut().getById(99L, 1L))
                 .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void 문서_접근권한이_FULL이_아니면_예외() {
+        when(loadDocPrPort.loadById(1L)).thenReturn(Optional.of(docPr()));
+        when(loadDocumentForDocPrPort.loadSummary(100L))
+                .thenReturn(Optional.of(new DocumentSummary(100L, 1L, 10L, true)));
+        when(checkDocumentAccessPort.hasFullAccess(100L, 40L)).thenReturn(false);
+
+        assertThatThrownBy(() -> sut().getById(40L, 1L))
+                .isInstanceOf(DocPrAccessDeniedException.class);
     }
 }

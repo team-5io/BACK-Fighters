@@ -1,10 +1,14 @@
 package com.lion._iozoo.document.application.service;
 
 import com.lion._iozoo.document.application.port.out.LoadDocumentPort;
+import com.lion._iozoo.document.application.port.out.LoadDocumentRaciPort;
 import com.lion._iozoo.document.application.port.out.LoadDocumentVersionsPort;
+import com.lion._iozoo.document.application.result.DocumentRaciEntry;
 import com.lion._iozoo.document.domain.Document;
 import com.lion._iozoo.document.domain.DocumentStatus;
 import com.lion._iozoo.document.domain.DocumentVersion;
+import com.lion._iozoo.document.domain.RaciRole;
+import com.lion._iozoo.document.domain.exception.DocumentAccessDeniedException;
 import com.lion._iozoo.document.domain.exception.DocumentNotFoundException;
 import com.lion._iozoo.global.exception.ForbiddenException;
 import com.lion._iozoo.team.application.TeamPermissionChecker;
@@ -30,10 +34,12 @@ class GetDocumentVersionsServiceTest {
     @Mock
     private LoadDocumentVersionsPort loadDocumentVersionsPort;
     @Mock
+    private LoadDocumentRaciPort loadDocumentRaciPort;
+    @Mock
     private TeamPermissionChecker teamPermissionChecker;
 
     private GetDocumentVersionsService sut() {
-        return new GetDocumentVersionsService(loadDocumentPort, loadDocumentVersionsPort, teamPermissionChecker);
+        return new GetDocumentVersionsService(loadDocumentPort, loadDocumentVersionsPort, loadDocumentRaciPort, teamPermissionChecker);
     }
 
     private Document document() {
@@ -74,5 +80,34 @@ class GetDocumentVersionsServiceTest {
 
         assertThatThrownBy(() -> sut().getVersions(99L, 100L))
                 .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void restricted_문서에_역할이_없으면_예외() {
+        Document restricted = Document.builder()
+                .id(100L).teamId(1L).authorId(10L)
+                .title("제목").content("내용")
+                .status(DocumentStatus.OFFICIAL).restricted(true)
+                .build();
+        when(loadDocumentPort.loadById(100L)).thenReturn(Optional.of(restricted));
+
+        assertThatThrownBy(() -> sut().getVersions(99L, 100L))
+                .isInstanceOf(DocumentAccessDeniedException.class);
+    }
+
+    @Test
+    void restricted_문서라도_RACI_I는_공식문서면_조회한다() {
+        Document restricted = Document.builder()
+                .id(100L).teamId(1L).authorId(10L)
+                .title("제목").content("내용")
+                .status(DocumentStatus.OFFICIAL).restricted(true)
+                .build();
+        when(loadDocumentPort.loadById(100L)).thenReturn(Optional.of(restricted));
+        when(loadDocumentRaciPort.loadByDocumentId(100L)).thenReturn(List.of(
+                new DocumentRaciEntry(99L, RaciRole.I, 10L, LocalDateTime.now())
+        ));
+        when(loadDocumentVersionsPort.loadByDocumentId(100L)).thenReturn(List.of());
+
+        assertThat(sut().getVersions(99L, 100L)).isEmpty();
     }
 }

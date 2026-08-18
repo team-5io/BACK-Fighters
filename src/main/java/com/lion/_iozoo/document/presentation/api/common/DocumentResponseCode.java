@@ -16,7 +16,8 @@ public enum DocumentResponseCode implements ResponseCode {
     DOCUMENT_RELATION_CREATED("DOCUMENT_201_2", "문서 관계가 생성되었습니다."),
     DOCUMENT_RELATIONS_FETCHED("DOCUMENT_200_6", "문서 관계 그래프를 조회했습니다."),
     DOCUMENT_IMPACT_FETCHED("DOCUMENT_200_7", "Impact Analysis 결과를 조회했습니다."),
-    DOCUMENT_VERSIONS_FETCHED("DOCUMENT_200_8", "문서 버전 이력을 조회했습니다.");
+    DOCUMENT_VERSIONS_FETCHED("DOCUMENT_200_8", "문서 버전 이력을 조회했습니다."),
+    DOCUMENT_MY_PERMISSION_FETCHED("DOCUMENT_200_9", "내 접근 권한을 조회했습니다.");
 
     private final String code;
     private final String message;

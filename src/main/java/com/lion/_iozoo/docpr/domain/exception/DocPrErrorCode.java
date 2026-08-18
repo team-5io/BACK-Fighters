@@ -17,7 +17,8 @@ public enum DocPrErrorCode implements ErrorCode {
     DOCPR_ALREADY_TERMINAL(HttpStatus.CONFLICT, "DOCPR_409_1", "이미 승인·반려·병합된 Doc PR입니다."),
     DOCPR_NOT_REQUESTER(HttpStatus.FORBIDDEN, "DOCPR_403_3", "요청자만 재제출할 수 있습니다."),
     DOCPR_NOT_REJECTED(HttpStatus.CONFLICT, "DOCPR_409_2", "반려된 Doc PR만 재제출할 수 있습니다."),
-    DOCPR_NOT_APPROVED(HttpStatus.CONFLICT, "DOCPR_409_3", "승인된 Doc PR만 병합할 수 있습니다.");
+    DOCPR_NOT_APPROVED(HttpStatus.CONFLICT, "DOCPR_409_3", "승인된 Doc PR만 병합할 수 있습니다."),
+    DOCPR_ACCESS_DENIED(HttpStatus.FORBIDDEN, "DOCPR_403_4", "해당 Doc PR에 대한 접근 권한이 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

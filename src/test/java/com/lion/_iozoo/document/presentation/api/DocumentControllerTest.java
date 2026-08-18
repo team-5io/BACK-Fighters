@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lion._iozoo.document.application.result.DocumentImpactResult;
 import com.lion._iozoo.document.application.result.DocumentRaciEntry;
 import com.lion._iozoo.document.application.result.DocumentRelationExploreResult;
+import com.lion._iozoo.document.application.result.MyDocumentPermissionResult;
 import com.lion._iozoo.document.application.usecase.*;
 import com.lion._iozoo.document.domain.Document;
+import com.lion._iozoo.document.domain.DocumentAccessLevel;
 import com.lion._iozoo.document.domain.DocumentRelation;
 import com.lion._iozoo.document.domain.DocumentStatus;
 import com.lion._iozoo.document.domain.DocumentVersion;
@@ -83,6 +85,9 @@ class DocumentControllerTest {
 
     @MockBean
     private GetDocumentVersionsUseCase getDocumentVersionsUseCase;
+
+    @MockBean
+    private GetMyDocumentPermissionUseCase getMyDocumentPermissionUseCase;
 
     @MockBean
     private JwtTokenProvider jwtTokenProvider;
@@ -303,5 +308,21 @@ class DocumentControllerTest {
                 .andExpect(jsonPath("$.data[0].versionNo").value(2))
                 .andExpect(jsonPath("$.data[0].content").value("변경된 내용"))
                 .andExpect(jsonPath("$.data[0].docPrId").value(5L));
+    }
+
+    @Test
+    @DisplayName("GET /documents/{documentId}/my-permissions - 내 접근 권한 조회 성공")
+    void getMyDocumentPermission_success() throws Exception {
+        MyDocumentPermissionResult result = new MyDocumentPermissionResult(
+                100L, RaciRole.C, DocumentAccessLevel.FULL, false, true);
+        given(getMyDocumentPermissionUseCase.getMyPermission(eq(USER_ID), eq(100L))).willReturn(result);
+
+        mockMvc.perform(get("/documents/100/my-permissions")
+                        .with(authentication(authToken())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("DOCUMENT_200_9"))
+                .andExpect(jsonPath("$.data.role").value("C"))
+                .andExpect(jsonPath("$.data.accessLevel").value("FULL"))
+                .andExpect(jsonPath("$.data.canViewDocPr").value(true));
     }
 }
