@@ -12,12 +12,12 @@ import com.lion._iozoo.document.infrastructure.persistence.mapper.DocumentMapper
 import com.lion._iozoo.document.infrastructure.persistence.repository.BlockJpaRepository;
 import com.lion._iozoo.document.infrastructure.persistence.repository.DocumentJpaRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -59,6 +59,7 @@ public class DocumentPersistenceAdapter implements SaveDocumentPort, LoadDocumen
     @Override
     public Optional<Document> loadById(Long documentId) {
         return documentJpaRepository.findById(documentId)
+                .filter(entity -> entity.getDeletedAt() == null)
                 .map(entity -> Document.builder()
                         .id(entity.getId())
                         .teamId(entity.getTeamId())
@@ -84,13 +85,17 @@ public class DocumentPersistenceAdapter implements SaveDocumentPort, LoadDocumen
                 .map(documentMapper::toDomain);
     }
 
+    // 하드 삭제하지 않는다 — documents를 참조하는 doc_prs/document_versions/document_raci/translations 등
+    // 이력 테이블이 많아, 실제로 지우면 FK 위반(#112) 또는 이력 손실이 발생한다. deleted_at만 채워
+    // 조회(loadById/loadByTeamId/searchByKeyword)에서 제외시키고, blocks 등 연관 데이터는 그대로 둔다.
     @Override
+    @Transactional
     public void deleteById(Long documentId) {
-        try {
-            documentJpaRepository.deleteById(documentId);
-        } catch (EmptyResultDataAccessException e) {
-            throw new DocumentNotFoundException(documentId);
-        }
+        DocumentEntity entity = documentJpaRepository.findById(documentId)
+                .filter(e -> e.getDeletedAt() == null)
+                .orElseThrow(() -> new DocumentNotFoundException(documentId));
+
+        entity.softDelete(LocalDateTime.now());
     }
 
     // LIKE 패턴의 와일드카드(%, _)를 리터럴로 취급하도록 이스케이프한다. 백슬래시부터 먼저 이스케이프해야 한다.
