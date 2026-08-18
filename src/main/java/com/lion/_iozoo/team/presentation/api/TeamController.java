@@ -136,6 +136,6 @@ public class TeamController {
 
         TeamCollaborationRuleEntity rule = generateCharterDraftUseCase.generate(teamId, authUser.userId());
 
-        return GlobalApiResponse.created(TeamResponseCode.COLLABORATION_RULE_DRAFT_GENERATED, CollaborationRuleResponse.from(rule));
+        return GlobalApiResponse.ok(TeamResponseCode.COLLABORATION_RULE_DRAFT_GENERATED, CollaborationRuleResponse.from(rule));
     }
 }
