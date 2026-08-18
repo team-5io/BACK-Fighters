@@ -22,9 +22,9 @@ public class AiGatewayTranslationAdapter implements RequestTranslationPort {
     private final RestClient aiGatewayRestClient;
 
     @Override
-    public TranslationGatewayResult requestTranslation(Long documentId, String content, String sourceLanguage, String targetLanguage) {
+    public TranslationGatewayResult requestTranslation(Long documentId, String blockId, String content, String sourceLanguage, String targetLanguage) {
         AiTranslationRequest request = new AiTranslationRequest(
-                String.valueOf(documentId), content, sourceLanguage, targetLanguage);
+                String.valueOf(documentId), blockId, content, sourceLanguage, targetLanguage);
 
         try {
             AiTranslationResponse response = aiGatewayRestClient.post()
@@ -46,7 +46,7 @@ public class AiGatewayTranslationAdapter implements RequestTranslationPort {
         }
     }
 
-    private record AiTranslationRequest(String documentId, String content, String sourceLang, String targetLang) {
+    private record AiTranslationRequest(String documentId, String blockId, String content, String sourceLang, String targetLang) {
     }
 
     private record AiTranslationResponse(String translatedContent, List<String> preservedTerms, boolean cached) {

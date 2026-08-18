@@ -234,7 +234,7 @@ public class DocumentController {
                 MyDocumentPermissionResponse.from(result));
     }
 
-    @Operation(summary = "개발 요소 보존 번역 요청", description = "코드블록·API명·변수명은 보존하고 나머지만 번역한다(Dev-aware Translation, AI-Fighters 프록시). 같은 문서·대상 언어로 이미 번역한 적 있으면 캐시된 결과를 즉시 반환한다.")
+    @Operation(summary = "개발 요소 보존 번역 요청", description = "블록 하나를 번역한다 — FE가 블록마다 이 API를 개별 호출한다 (type: code인 블록은 호출하지 않고 원문 유지). 코드블록·API명·변수명은 보존하고 나머지만 번역한다(Dev-aware Translation, AI-Fighters 프록시). 같은 문서·블록·대상 언어로 이미 번역한 적 있으면 캐시된 결과를 즉시 반환한다.")
     @PostMapping("/{documentId}/translations")
     public GlobalApiResponse<TranslationResponse> requestTranslation(
             @AuthenticationPrincipal AuthUser authUser,
@@ -242,7 +242,7 @@ public class DocumentController {
             @RequestBody @Valid RequestTranslationRequest request) {
 
         RequestTranslationCommand command = new RequestTranslationCommand(
-                request.content(), request.sourceLanguage(), request.targetLanguage());
+                request.blockId(), request.content(), request.sourceLanguage(), request.targetLanguage());
 
         RequestTranslationResult result = requestTranslationUseCase.translate(authUser.userId(), documentId, command);
 
