@@ -6,6 +6,7 @@ import com.lion._iozoo.team.application.command.CreateTeamCommand;
 import com.lion._iozoo.team.application.command.InviteTeamMemberCommand;
 import com.lion._iozoo.team.application.command.UpsertCollaborationRuleCommand;
 import com.lion._iozoo.team.application.usecase.CreateTeamUseCase;
+import com.lion._iozoo.team.application.usecase.GenerateCharterDraftUseCase;
 import com.lion._iozoo.team.application.usecase.InviteTeamMemberUseCase;
 import com.lion._iozoo.team.application.usecase.ListMyTeamsUseCase;
 import com.lion._iozoo.team.application.usecase.ListTeamMembersUseCase;
@@ -50,6 +51,7 @@ public class TeamController {
     private final ListTeamMembersUseCase listTeamMembersUseCase;
     private final UpsertCollaborationRuleUseCase upsertCollaborationRuleUseCase;
     private final ListMyTeamsUseCase listMyTeamsUseCase;
+    private final GenerateCharterDraftUseCase generateCharterDraftUseCase;
 
     @Operation(summary = "내가 소속된 팀 목록 조회", description = "로그인한 유저가 속한 팀 목록을 조회한다.")
     @GetMapping("/me")
@@ -124,5 +126,16 @@ public class TeamController {
         TeamCollaborationRuleEntity rule = upsertCollaborationRuleUseCase.upsert(teamId, authUser.userId(), command);
 
         return GlobalApiResponse.ok(TeamResponseCode.COLLABORATION_RULE_UPSERTED, CollaborationRuleResponse.from(rule));
+    }
+
+    @Operation(summary = "협업 규칙 초안 생성 요청", description = "팀 관리자가 AI(Team Collaboration Charter)에게 협업 규칙 초안 생성을 요청한다. 생성된 여러 규칙을 번호 매긴 목록으로 합쳐 DRAFT 상태로 저장한다(기존 초안이 있으면 덮어씀).")
+    @PostMapping("/{teamId}/charter/draft")
+    public GlobalApiResponse<CollaborationRuleResponse> generateCharterDraft(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long teamId) {
+
+        TeamCollaborationRuleEntity rule = generateCharterDraftUseCase.generate(teamId, authUser.userId());
+
+        return GlobalApiResponse.created(TeamResponseCode.COLLABORATION_RULE_DRAFT_GENERATED, CollaborationRuleResponse.from(rule));
     }
 }
