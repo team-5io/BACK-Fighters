@@ -70,7 +70,7 @@ public class AiGatewayDocumentLionAdapter implements RequestDocumentLionReviewPo
     }
 
     private record AiReviewIssue(
-            String severity, String issueType, String description, String relatedDocumentId,
+            String severity, String issueType, String description, Long relatedDocumentId,
             String charterRuleId, String locationRef) {
     }
 
