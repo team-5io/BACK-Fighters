@@ -1,5 +1,6 @@
 package com.lion._iozoo.document.presentation.api.response;
 
+import com.lion._iozoo.document.application.port.out.UserSummary;
 import com.lion._iozoo.document.domain.Block;
 import com.lion._iozoo.document.domain.Document;
 import com.lion._iozoo.document.domain.DocumentStatus;
@@ -16,8 +17,8 @@ public record DocumentResponse(
         @Schema(description = "문서가 속한 팀 ID", example = "1")
         Long teamId,
 
-        @Schema(description = "작성자(R) 사용자 ID", example = "10")
-        Long authorId,
+        @Schema(description = "담당자 (작성자/R)")
+        DocumentAssigneeResponse assignee,
 
         @Schema(description = "문서 제목", example = "온보딩 가이드")
         String title,
@@ -34,11 +35,11 @@ public record DocumentResponse(
         @Schema(description = "제한 문서 여부 (true면 작성자 본인에게만 노출)", example = "false")
         boolean restricted
 ) {
-    public static DocumentResponse from(Document document) {
+    public static DocumentResponse from(Document document, UserSummary authorSummary) {
         return DocumentResponse.builder()
                 .id(document.getId())
                 .teamId(document.getTeamId())
-                .authorId(document.getAuthorId())
+                .assignee(DocumentAssigneeResponse.of(document.getAuthorId(), authorSummary))
                 .title(document.getTitle())
                 .content(document.getContent())
                 .blocks(document.getBlocks())

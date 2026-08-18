@@ -1,6 +1,8 @@
 package com.lion._iozoo.document.presentation.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lion._iozoo.document.application.port.out.LoadUserSummaryPort;
+import com.lion._iozoo.document.application.port.out.UserSummary;
 import com.lion._iozoo.document.application.result.DocumentImpactResult;
 import com.lion._iozoo.document.application.result.DocumentRaciEntry;
 import com.lion._iozoo.document.application.result.DocumentRelationExploreResult;
@@ -97,6 +99,12 @@ class DocumentControllerTest {
     private GetTranslationUseCase getTranslationUseCase;
 
     @MockBean
+    private GetDocumentUseCase getDocumentUseCase;
+
+    @MockBean
+    private LoadUserSummaryPort loadUserSummaryPort;
+
+    @MockBean
     private JwtTokenProvider jwtTokenProvider;
 
     @MockBean
@@ -126,6 +134,8 @@ class DocumentControllerTest {
     void createDocument_success() throws Exception {
         Document document = sampleDocument();
         given(createDocumentUseCase.create(eq(USER_ID), any())).willReturn(document);
+        given(loadUserSummaryPort.loadSummariesByUserIds(List.of(USER_ID)))
+                .willReturn(java.util.Map.of(USER_ID, new UserSummary("김재원", "author@b.com")));
 
         CreateDocumentRequest request = new CreateDocumentRequest(1L, "테스트 문서",
                 List.of(Block.builder().id("b1").type("paragraph").content("테스트 내용").build()));
@@ -139,7 +149,28 @@ class DocumentControllerTest {
                 .andExpect(jsonPath("$.code").value("DOCUMENT_201_1"))
                 .andExpect(jsonPath("$.data.id").value(100L))
                 .andExpect(jsonPath("$.data.title").value("테스트 문서"))
-                .andExpect(jsonPath("$.data.status").value("DRAFT"));
+                .andExpect(jsonPath("$.data.status").value("DRAFT"))
+                .andExpect(jsonPath("$.data.assignee.userId").value(USER_ID))
+                .andExpect(jsonPath("$.data.assignee.name").value("김재원"))
+                .andExpect(jsonPath("$.data.assignee.role").value("R"));
+    }
+
+    @Test
+    @DisplayName("GET /documents/{documentId} - 문서 상세조회 성공")
+    void getDocument_success() throws Exception {
+        Document document = sampleDocument();
+        given(getDocumentUseCase.getById(eq(USER_ID), eq(100L))).willReturn(document);
+        given(loadUserSummaryPort.loadSummariesByUserIds(List.of(USER_ID)))
+                .willReturn(java.util.Map.of(USER_ID, new UserSummary("김재원", "author@b.com")));
+
+        mockMvc.perform(get("/documents/100")
+                        .with(authentication(authToken())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("DOCUMENT_200_12"))
+                .andExpect(jsonPath("$.data.id").value(100L))
+                .andExpect(jsonPath("$.data.title").value("테스트 문서"))
+                .andExpect(jsonPath("$.data.assignee.name").value("김재원"))
+                .andExpect(jsonPath("$.data.assignee.role").value("R"));
     }
 
     @Test
