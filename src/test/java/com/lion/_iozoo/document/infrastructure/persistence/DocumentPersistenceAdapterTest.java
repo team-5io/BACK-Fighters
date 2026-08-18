@@ -14,12 +14,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -68,19 +68,45 @@ class DocumentPersistenceAdapterTest {
     }
 
     @Test
-    void 삭제_대상이_이미_없으면_DocumentNotFoundException으로_변환한다() {
-        doThrow(new EmptyResultDataAccessException(1)).when(documentJpaRepository).deleteById(100L);
+    void 삭제_대상이_없으면_DocumentNotFoundException을_던진다() {
+        when(documentJpaRepository.findById(100L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> sut().deleteById(100L))
                 .isInstanceOf(DocumentNotFoundException.class);
     }
 
     @Test
-    void 문서_삭제시_블록을_먼저_지워서_FK_제약_위반을_방지한다() {
+    void 이미_삭제된_문서를_다시_삭제하면_DocumentNotFoundException을_던진다() {
+        DocumentEntity alreadyDeleted = documentEntity();
+        alreadyDeleted.softDelete(LocalDateTime.now());
+        when(documentJpaRepository.findById(100L)).thenReturn(Optional.of(alreadyDeleted));
+
+        assertThatThrownBy(() -> sut().deleteById(100L))
+                .isInstanceOf(DocumentNotFoundException.class);
+    }
+
+    @Test
+    void 문서_삭제는_하드_삭제_대신_deletedAt만_채운다() {
+        DocumentEntity entity = documentEntity();
+        when(documentJpaRepository.findById(100L)).thenReturn(Optional.of(entity));
+
         sut().deleteById(100L);
 
-        verify(blockJpaRepository).deleteByDocumentId(100L);
-        verify(documentJpaRepository).deleteById(100L);
+        assertThat(entity.getDeletedAt()).isNotNull();
+        verify(documentJpaRepository, never()).deleteById(any());
+        verify(documentJpaRepository, never()).delete(any());
+        verify(blockJpaRepository, never()).deleteByDocumentId(any());
+    }
+
+    @Test
+    void 삭제된_문서는_단건조회에서_제외된다() {
+        DocumentEntity deleted = documentEntity();
+        deleted.softDelete(LocalDateTime.now());
+        when(documentJpaRepository.findById(100L)).thenReturn(Optional.of(deleted));
+
+        Optional<Document> result = sut().loadById(100L);
+
+        assertThat(result).isEmpty();
     }
 
     @Test
