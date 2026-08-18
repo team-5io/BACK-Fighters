@@ -90,6 +90,12 @@ class DocumentControllerTest {
     private GetMyDocumentPermissionUseCase getMyDocumentPermissionUseCase;
 
     @MockBean
+    private RequestTranslationUseCase requestTranslationUseCase;
+
+    @MockBean
+    private GetTranslationUseCase getTranslationUseCase;
+
+    @MockBean
     private JwtTokenProvider jwtTokenProvider;
 
     @MockBean
