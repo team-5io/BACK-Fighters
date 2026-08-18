@@ -4,6 +4,7 @@ import com.lion._iozoo.document.application.command.CreateDocumentCommand;
 import com.lion._iozoo.document.application.command.CreateDocumentRelationCommand;
 import com.lion._iozoo.document.application.command.RaciAssignmentCommand;
 import com.lion._iozoo.document.application.command.RequestTranslationCommand;
+import com.lion._iozoo.document.application.command.RequestWritingSuggestionsCommand;
 import com.lion._iozoo.document.application.command.SetDocumentRaciCommand;
 import com.lion._iozoo.document.application.command.UpdateDocumentCommand;
 import com.lion._iozoo.document.application.port.out.LoadUserSummaryPort;
@@ -13,6 +14,7 @@ import com.lion._iozoo.document.application.result.DocumentRaciEntry;
 import com.lion._iozoo.document.application.result.DocumentRelationExploreResult;
 import com.lion._iozoo.document.application.result.MyDocumentPermissionResult;
 import com.lion._iozoo.document.application.result.RequestTranslationResult;
+import com.lion._iozoo.document.application.result.WritingSuggestionResult;
 import com.lion._iozoo.document.application.usecase.*;
 import com.lion._iozoo.document.domain.Document;
 import com.lion._iozoo.document.domain.DocumentRelation;
@@ -22,6 +24,7 @@ import com.lion._iozoo.document.presentation.api.common.DocumentResponseCode;
 import com.lion._iozoo.document.presentation.api.request.CreateDocumentRelationRequest;
 import com.lion._iozoo.document.presentation.api.request.CreateDocumentRequest;
 import com.lion._iozoo.document.presentation.api.request.RequestTranslationRequest;
+import com.lion._iozoo.document.presentation.api.request.RequestWritingSuggestionsRequest;
 import com.lion._iozoo.document.presentation.api.request.SetDocumentRaciRequest;
 import com.lion._iozoo.document.presentation.api.request.UpdateDocumentRequest;
 import com.lion._iozoo.document.presentation.api.response.DocumentImpactResponse;
@@ -32,6 +35,7 @@ import com.lion._iozoo.document.presentation.api.response.DocumentResponse;
 import com.lion._iozoo.document.presentation.api.response.DocumentVersionResponse;
 import com.lion._iozoo.document.presentation.api.response.MyDocumentPermissionResponse;
 import com.lion._iozoo.document.presentation.api.response.TranslationResponse;
+import com.lion._iozoo.document.presentation.api.response.WritingSuggestionsResponse;
 import com.lion._iozoo.global.presentation.GlobalApiResponse;
 import com.lion._iozoo.global.security.AuthUser;
 import io.swagger.v3.oas.annotations.Operation;
@@ -67,6 +71,7 @@ public class DocumentController {
     private final GetMyDocumentPermissionUseCase getMyDocumentPermissionUseCase;
     private final RequestTranslationUseCase requestTranslationUseCase;
     private final GetTranslationUseCase getTranslationUseCase;
+    private final RequestWritingSuggestionsUseCase requestWritingSuggestionsUseCase;
     private final LoadUserSummaryPort loadUserSummaryPort;
 
     @Operation(summary = "문서 생성", description = "팀 공간에 DRAFT 상태의 새 문서를 생성한다.")
@@ -284,6 +289,23 @@ public class DocumentController {
 
         return GlobalApiResponse.ok(DocumentResponseCode.TRANSLATION_FETCHED,
                 TranslationResponse.from(translation, true));
+    }
+
+    @Operation(summary = "글쓰기 제안 요청", description = "작성 중인 문서에 구조 가이드·다음 문단·명확성 제안을 받는다(AI Writing Assistant, AI-Fighters 프록시). 저장은 하지 않으며, 제안 목록만 내려준다.")
+    @PostMapping("/{documentId}/writing-assistant/suggestions")
+    public GlobalApiResponse<WritingSuggestionsResponse> requestWritingSuggestions(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long documentId,
+            @RequestBody @Valid RequestWritingSuggestionsRequest request) {
+
+        RequestWritingSuggestionsCommand command = new RequestWritingSuggestionsCommand(
+                request.content(), request.cursorContext());
+
+        List<WritingSuggestionResult> results = requestWritingSuggestionsUseCase.request(
+                authUser.userId(), documentId, command);
+
+        return GlobalApiResponse.ok(DocumentResponseCode.WRITING_SUGGESTIONS_FETCHED,
+                WritingSuggestionsResponse.from(results));
     }
 
     private UserSummary loadAuthorSummary(Document document) {
