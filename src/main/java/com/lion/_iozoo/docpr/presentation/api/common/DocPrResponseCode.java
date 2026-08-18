@@ -21,7 +21,8 @@ public enum DocPrResponseCode implements ResponseCode {
     DOC_PR_REVIEWS_FETCHED("DOCPR_200_10", "리뷰 의견 목록을 조회했습니다."),
     NEXT_ASSIGNEE_INFO_FETCHED("DOCPR_200_11", "다음 작업자 정보를 조회했습니다."),
     AI_REVIEW_REQUESTED("DOCPR_200_12", "AI 리뷰를 요청했습니다."),
-    AI_REVIEW_FETCHED("DOCPR_200_13", "AI 리뷰 결과를 조회했습니다.");
+    AI_REVIEW_FETCHED("DOCPR_200_13", "AI 리뷰 결과를 조회했습니다."),
+    DOC_PRS_FETCHED("DOCPR_200_14", "Doc PR 목록을 조회했습니다.");
 
     private final String code;
     private final String message;

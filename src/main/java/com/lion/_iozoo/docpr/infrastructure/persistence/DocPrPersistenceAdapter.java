@@ -7,6 +7,8 @@ import com.lion._iozoo.docpr.infrastructure.persistence.entity.DocPrEntity;
 import com.lion._iozoo.docpr.infrastructure.persistence.mapper.DocPrMapper;
 import com.lion._iozoo.docpr.infrastructure.persistence.repository.DocPrJpaRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -28,6 +30,12 @@ public class DocPrPersistenceAdapter implements SaveDocPrPort, LoadDocPrPort {
     @Override
     public Optional<DocPr> loadById(Long docPrId) {
         return docPrJpaRepository.findById(docPrId)
+                .map(docPrMapper::toDomain);
+    }
+
+    @Override
+    public Page<DocPr> loadByTeamId(Long teamId, Long userId, Pageable pageable) {
+        return docPrJpaRepository.findAllByTeamId(teamId, userId, pageable)
                 .map(docPrMapper::toDomain);
     }
 }
