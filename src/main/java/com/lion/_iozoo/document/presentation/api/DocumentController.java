@@ -73,7 +73,7 @@ public class DocumentController {
         CreateDocumentCommand command = new CreateDocumentCommand(
                 request.teamId(),
                 request.title(),
-                request.content()
+                request.blocks()
         );
 
         Document document = createDocumentUseCase.create(authUser.userId(), command);
@@ -90,7 +90,7 @@ public class DocumentController {
 
         UpdateDocumentCommand command = new UpdateDocumentCommand(
                 request.title(),
-                request.content()
+                request.blocks()
         );
 
         Document document = updateDocumentUseCase.update(authUser.userId(), documentId, command);

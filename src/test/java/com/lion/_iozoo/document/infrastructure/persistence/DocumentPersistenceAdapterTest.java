@@ -1,8 +1,13 @@
 package com.lion._iozoo.document.infrastructure.persistence;
 
+import com.lion._iozoo.document.domain.Block;
+import com.lion._iozoo.document.domain.Document;
+import com.lion._iozoo.document.domain.DocumentStatus;
 import com.lion._iozoo.document.domain.exception.DocumentNotFoundException;
+import com.lion._iozoo.document.infrastructure.persistence.entity.BlockEntity;
 import com.lion._iozoo.document.infrastructure.persistence.entity.DocumentEntity;
 import com.lion._iozoo.document.infrastructure.persistence.mapper.DocumentMapper;
+import com.lion._iozoo.document.infrastructure.persistence.repository.BlockJpaRepository;
 import com.lion._iozoo.document.infrastructure.persistence.repository.DocumentJpaRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +21,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -31,10 +38,20 @@ class DocumentPersistenceAdapterTest {
     @Mock
     private DocumentJpaRepository documentJpaRepository;
     @Mock
+    private BlockJpaRepository blockJpaRepository;
+    @Mock
     private DocumentMapper documentMapper;
 
     private DocumentPersistenceAdapter sut() {
-        return new DocumentPersistenceAdapter(documentJpaRepository, documentMapper);
+        return new DocumentPersistenceAdapter(documentJpaRepository, blockJpaRepository, documentMapper);
+    }
+
+    private DocumentEntity documentEntity() {
+        return DocumentEntity.builder()
+                .id(100L).teamId(1L).authorId(10L)
+                .title("제목").content("부모 내용\n자식 내용")
+                .status(DocumentStatus.DRAFT).restricted(false)
+                .build();
     }
 
     @Test
@@ -56,5 +73,52 @@ class DocumentPersistenceAdapterTest {
 
         assertThatThrownBy(() -> sut().deleteById(100L))
                 .isInstanceOf(DocumentNotFoundException.class);
+    }
+
+    @Test
+    void 저장시_기존_블록을_지우고_트리를_평탄화해서_다시_저장한다() {
+        when(documentMapper.toEntity(any())).thenReturn(documentEntity());
+        when(documentJpaRepository.save(any())).thenReturn(documentEntity());
+
+        Block child = Block.builder().id("b2").type("paragraph").content("자식 내용").build();
+        Block parent = Block.builder().id("b1").type("paragraph").content("부모 내용")
+                .children(List.of(child)).build();
+        Document document = Document.builder()
+                .teamId(1L).authorId(10L).title("제목")
+                .blocks(List.of(parent))
+                .status(DocumentStatus.DRAFT).restricted(false)
+                .build();
+
+        sut().save(document);
+
+        verify(blockJpaRepository).deleteByDocumentId(100L);
+        ArgumentCaptor<List<BlockEntity>> captor = ArgumentCaptor.forClass(List.class);
+        verify(blockJpaRepository).saveAll(captor.capture());
+        List<BlockEntity> saved = captor.getValue();
+        assertThat(saved).hasSize(2);
+        assertThat(saved.get(0).getId()).isEqualTo("b1");
+        assertThat(saved.get(0).getParentBlockId()).isNull();
+        assertThat(saved.get(1).getId()).isEqualTo("b2");
+        assertThat(saved.get(1).getParentBlockId()).isEqualTo("b1");
+    }
+
+    @Test
+    void 조회시_평탄화된_블록들을_트리로_재구성한다() {
+        when(documentJpaRepository.findById(100L)).thenReturn(Optional.of(documentEntity()));
+        BlockEntity parent = BlockEntity.builder()
+                .id("b1").documentId(100L).parentBlockId(null).sortOrder(0)
+                .type("paragraph").content("부모 내용").build();
+        BlockEntity child = BlockEntity.builder()
+                .id("b2").documentId(100L).parentBlockId("b1").sortOrder(0)
+                .type("paragraph").content("자식 내용").build();
+        when(blockJpaRepository.findByDocumentIdOrderBySortOrderAsc(100L)).thenReturn(List.of(parent, child));
+
+        Document result = sut().loadById(100L).orElseThrow();
+
+        assertThat(result.getBlocks()).hasSize(1);
+        Block root = result.getBlocks().get(0);
+        assertThat(root.getId()).isEqualTo("b1");
+        assertThat(root.getChildren()).hasSize(1);
+        assertThat(root.getChildren().get(0).getId()).isEqualTo("b2");
     }
 }

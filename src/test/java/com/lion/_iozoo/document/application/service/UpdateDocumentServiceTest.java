@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,7 +51,7 @@ class UpdateDocumentServiceTest {
         when(loadDocumentPort.loadById(100L)).thenReturn(Optional.of(draft(10L)));
         when(saveDocumentPort.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Document result = sut().update(10L, 100L, new UpdateDocumentCommand("새 제목", "새 내용"));
+        Document result = sut().update(10L, 100L, new UpdateDocumentCommand("새 제목", List.of()));
 
         assertThat(result.getTitle()).isEqualTo("새 제목");
         verify(teamPermissionChecker).requireMember(1L, 10L);
@@ -60,7 +61,7 @@ class UpdateDocumentServiceTest {
     void 작성자가_아니면_예외() {
         when(loadDocumentPort.loadById(100L)).thenReturn(Optional.of(draft(10L)));
 
-        assertThatThrownBy(() -> sut().update(99L, 100L, new UpdateDocumentCommand("새 제목", "새 내용")))
+        assertThatThrownBy(() -> sut().update(99L, 100L, new UpdateDocumentCommand("새 제목", List.of())))
                 .isInstanceOf(DocumentAccessDeniedException.class);
 
         verify(saveDocumentPort, never()).save(any());
@@ -75,7 +76,7 @@ class UpdateDocumentServiceTest {
                 .build();
         when(loadDocumentPort.loadById(100L)).thenReturn(Optional.of(official));
 
-        assertThatThrownBy(() -> sut().update(10L, 100L, new UpdateDocumentCommand("새 제목", "새 내용")))
+        assertThatThrownBy(() -> sut().update(10L, 100L, new UpdateDocumentCommand("새 제목", List.of())))
                 .isInstanceOf(DocumentNotDraftException.class);
 
         verify(saveDocumentPort, never()).save(any());
@@ -85,7 +86,7 @@ class UpdateDocumentServiceTest {
     void 문서가_없으면_예외() {
         when(loadDocumentPort.loadById(100L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> sut().update(10L, 100L, new UpdateDocumentCommand("새 제목", "새 내용")))
+        assertThatThrownBy(() -> sut().update(10L, 100L, new UpdateDocumentCommand("새 제목", List.of())))
                 .isInstanceOf(DocumentNotFoundException.class);
     }
 }

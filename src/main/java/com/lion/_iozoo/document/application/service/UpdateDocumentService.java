@@ -43,7 +43,7 @@ public class UpdateDocumentService implements UpdateDocumentUseCase {
                 throw new DocumentNotDraftException(documentId);
             }
 
-            document.update(command.title(), command.content());
+            document.update(command.title(), command.blocks());
 
             Document saved = saveDocumentPort.save(document);
 
