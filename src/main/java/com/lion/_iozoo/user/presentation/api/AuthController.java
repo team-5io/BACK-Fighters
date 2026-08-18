@@ -11,16 +11,19 @@ import com.lion._iozoo.user.presentation.api.request.LoginRequest;
 import com.lion._iozoo.user.presentation.api.request.SignupRequest;
 import com.lion._iozoo.user.presentation.api.response.LoginResponse;
 import com.lion._iozoo.user.presentation.api.response.SignupResponse;
+import com.lion._iozoo.global.exception.UnauthorizedException;
 import com.lion._iozoo.global.presentation.GlobalApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.lion._iozoo.user.presentation.api.request.LogoutRequest;
 import com.lion._iozoo.user.presentation.api.common.UserResponseCode;
 
 
@@ -29,6 +32,8 @@ import com.lion._iozoo.user.presentation.api.common.UserResponseCode;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
+
+    private static final String BEARER_PREFIX = "Bearer ";
 
     private final SignupUseCase signupUseCase;
     private final LoginUseCase loginUseCase;
@@ -63,10 +68,15 @@ public class AuthController {
         return GlobalApiResponse.ok(UserResponseCode.LOGIN_SUCCESS, LoginResponse.of(result.user(), result.accessToken()));
     }
 
-    @Operation(summary = "로그아웃", description = "전달된 액세스 토큰을 블랙리스트에 등록해 무효화한다.")
+    @Operation(summary = "로그아웃", description = "Authorization 헤더의 액세스 토큰을 블랙리스트에 등록해 무효화한다.")
     @PostMapping("/logout")
-    public GlobalApiResponse<Void> logout(@RequestBody @Valid LogoutRequest request) {
-        logoutUseCase.logout(request.accessToken());
+    public GlobalApiResponse<Void> logout(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader) {
+        if (!StringUtils.hasText(authorizationHeader) || !authorizationHeader.startsWith(BEARER_PREFIX)) {
+            throw new UnauthorizedException("액세스 토큰이 필요합니다.");
+        }
+
+        logoutUseCase.logout(authorizationHeader.substring(BEARER_PREFIX.length()));
 
         return GlobalApiResponse.ok(UserResponseCode.LOGOUT_SUCCESS);
     }
