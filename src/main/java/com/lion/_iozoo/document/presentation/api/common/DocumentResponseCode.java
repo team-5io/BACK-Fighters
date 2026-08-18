@@ -19,7 +19,8 @@ public enum DocumentResponseCode implements ResponseCode {
     DOCUMENT_VERSIONS_FETCHED("DOCUMENT_200_8", "문서 버전 이력을 조회했습니다."),
     DOCUMENT_MY_PERMISSION_FETCHED("DOCUMENT_200_9", "내 접근 권한을 조회했습니다."),
     TRANSLATION_REQUESTED("DOCUMENT_200_10", "번역 요청이 완료되었습니다."),
-    TRANSLATION_FETCHED("DOCUMENT_200_11", "번역 결과를 조회했습니다.");
+    TRANSLATION_FETCHED("DOCUMENT_200_11", "번역 결과를 조회했습니다."),
+    DOCUMENT_FETCHED("DOCUMENT_200_12", "문서를 조회했습니다.");
 
     private final String code;
     private final String message;
