@@ -56,13 +56,13 @@ jobs:
               "Update": "true"
             },
             "Ports": [
-              { "ContainerPort": "8080" }
+              { "ContainerPort": "8080", "HostPort": "8080" }
             ]
           }
           EOF
 
       - name: Zip deployment package
-        run: zip -r deploy.zip Dockerrun.aws.json .ebextensions .platform
+        run: zip -r deploy.zip Dockerrun.aws.json
 
       - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v22
