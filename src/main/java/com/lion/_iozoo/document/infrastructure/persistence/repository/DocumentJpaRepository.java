@@ -15,11 +15,11 @@ public interface DocumentJpaRepository extends JpaRepository<DocumentEntity, Lon
             + "OR EXISTS (SELECT 1 FROM DocumentRaciEntity r WHERE r.documentId = d.id AND r.userId = :userId AND r.raciRole IN ('R','A','C')) "
             + "OR (d.status = 'OFFICIAL' AND EXISTS (SELECT 1 FROM DocumentRaciEntity r WHERE r.documentId = d.id AND r.userId = :userId AND r.raciRole = 'I')))";
 
-    @Query("SELECT d FROM DocumentEntity d WHERE d.teamId = :teamId AND " + RACI_VISIBILITY_CONDITION)
+    @Query("SELECT d FROM DocumentEntity d WHERE d.deletedAt IS NULL AND d.teamId = :teamId AND " + RACI_VISIBILITY_CONDITION)
     Page<DocumentEntity> findByTeamId(@Param("teamId") Long teamId, @Param("userId") Long userId, Pageable pageable);
 
     // pattern은 어댑터에서 LIKE 와일드카드(%, _)를 이스케이프하고 앞뒤에 %를 붙여 전달한다.
-    @Query("SELECT d FROM DocumentEntity d WHERE d.teamId = :teamId AND " + RACI_VISIBILITY_CONDITION
+    @Query("SELECT d FROM DocumentEntity d WHERE d.deletedAt IS NULL AND d.teamId = :teamId AND " + RACI_VISIBILITY_CONDITION
             + " AND (d.title LIKE :pattern ESCAPE '\\' OR d.content LIKE :pattern ESCAPE '\\')")
     Page<DocumentEntity> searchByKeyword(@Param("teamId") Long teamId, @Param("userId") Long userId,
                                           @Param("pattern") String pattern, Pageable pageable);

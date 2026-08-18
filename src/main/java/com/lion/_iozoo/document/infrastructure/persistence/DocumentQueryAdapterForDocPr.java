@@ -22,6 +22,7 @@ public class DocumentQueryAdapterForDocPr implements LoadDocumentForDocPrPort {
     @Override
     public Optional<DocumentSummary> loadSummary(Long documentId) {
         return documentJpaRepository.findById(documentId)
+                .filter(entity -> entity.getDeletedAt() == null)
                 .map(entity -> new DocumentSummary(
                         entity.getId(),
                         entity.getTeamId(),

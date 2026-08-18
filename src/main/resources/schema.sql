@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS documents (
     content       LONGTEXT     NULL COMMENT '블록 본문에서 파생된 평문 캐시(검색용) — 진짜 본문은 blocks 테이블',
     status        ENUM('DRAFT', 'OFFICIAL') NOT NULL DEFAULT 'DRAFT',
     is_restricted BOOLEAN      NOT NULL DEFAULT FALSE COMMENT '지정 참여자 전용 문서 여부(RACI 배정 시 TRUE)',
+    deleted_at    DATETIME     NULL COMMENT 'soft delete 시각. NULL이면 살아있는 문서(하드 삭제하지 않음 — doc_prs/버전/RACI 등 이력 보존)',
     created_at    DATETIME     NOT NULL,
     updated_at    DATETIME     NOT NULL,
     CONSTRAINT fk_documents_team FOREIGN KEY (team_id) REFERENCES teams (id),
