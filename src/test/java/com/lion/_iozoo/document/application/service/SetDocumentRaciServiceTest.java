@@ -13,6 +13,7 @@ import com.lion._iozoo.document.domain.exception.DocumentNotFoundException;
 import com.lion._iozoo.document.domain.exception.DocumentRaciDuplicateUserException;
 import com.lion._iozoo.global.exception.ForbiddenException;
 import com.lion._iozoo.team.application.TeamPermissionChecker;
+import com.lion._iozoo.team.domain.exception.TeamMemberNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -58,20 +59,23 @@ class SetDocumentRaciServiceTest {
     @Test
     void 팀_관리자가_RACI를_지정한다() {
         when(loadDocumentPort.loadById(100L)).thenReturn(Optional.of(document()));
+        when(teamPermissionChecker.resolveUserId(1L, 101L)).thenReturn(10L);
+        when(teamPermissionChecker.resolveUserId(1L, 102L)).thenReturn(20L);
         when(replaceDocumentRaciPort.replaceAll(eq(100L), any()))
                 .thenAnswer(invocation -> invocation.getArgument(1));
 
         SetDocumentRaciCommand command = new SetDocumentRaciCommand(100L, List.of(
-                new RaciAssignmentCommand(10L, RaciRole.R),
-                new RaciAssignmentCommand(20L, RaciRole.A)
+                new RaciAssignmentCommand(101L, RaciRole.R),
+                new RaciAssignmentCommand(102L, RaciRole.A)
         ));
 
         List<DocumentRaciEntry> result = sut().setRaci(1L, command);
 
         assertThat(result).hasSize(2);
+        assertThat(result).extracting(DocumentRaciEntry::userId).containsExactlyInAnyOrder(10L, 20L);
         verify(teamPermissionChecker).requireAdmin(1L, 1L);
-        verify(teamPermissionChecker).requireMember(1L, 10L);
-        verify(teamPermissionChecker).requireMember(1L, 20L);
+        verify(teamPermissionChecker).resolveUserId(1L, 101L);
+        verify(teamPermissionChecker).resolveUserId(1L, 102L);
         verify(saveDocumentPort).save(argThat(Document::isRestricted));
     }
 
@@ -120,12 +124,12 @@ class SetDocumentRaciServiceTest {
     }
 
     @Test
-    void 같은_사용자가_중복되면_예외() {
+    void 같은_팀원이_중복되면_예외() {
         when(loadDocumentPort.loadById(100L)).thenReturn(Optional.of(document()));
 
         SetDocumentRaciCommand command = new SetDocumentRaciCommand(100L, List.of(
-                new RaciAssignmentCommand(10L, RaciRole.R),
-                new RaciAssignmentCommand(10L, RaciRole.A)
+                new RaciAssignmentCommand(101L, RaciRole.R),
+                new RaciAssignmentCommand(101L, RaciRole.A)
         ));
 
         assertThatThrownBy(() -> sut().setRaci(1L, command))
@@ -137,13 +141,13 @@ class SetDocumentRaciServiceTest {
     @Test
     void 배정_대상이_팀원이_아니면_예외() {
         when(loadDocumentPort.loadById(100L)).thenReturn(Optional.of(document()));
-        doThrow(new ForbiddenException()).when(teamPermissionChecker).requireMember(1L, 30L);
+        doThrow(new TeamMemberNotFoundException()).when(teamPermissionChecker).resolveUserId(1L, 999L);
 
         SetDocumentRaciCommand command = new SetDocumentRaciCommand(100L,
-                List.of(new RaciAssignmentCommand(30L, RaciRole.C)));
+                List.of(new RaciAssignmentCommand(999L, RaciRole.C)));
 
         assertThatThrownBy(() -> sut().setRaci(1L, command))
-                .isInstanceOf(ForbiddenException.class);
+                .isInstanceOf(TeamMemberNotFoundException.class);
 
         verify(replaceDocumentRaciPort, never()).replaceAll(any(), any());
     }

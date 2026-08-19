@@ -45,20 +45,19 @@ public class SetDocumentRaciService implements SetDocumentRaciUseCase {
 
             List<RaciAssignmentCommand> assignments = command.assignments();
 
-            Set<Long> distinctUserIds = assignments.stream()
-                    .map(RaciAssignmentCommand::userId)
+            Set<Long> distinctMemberIds = assignments.stream()
+                    .map(RaciAssignmentCommand::memberId)
                     .collect(Collectors.toSet());
-            if (distinctUserIds.size() != assignments.size()) {
+            if (distinctMemberIds.size() != assignments.size()) {
                 throw new DocumentRaciDuplicateUserException(command.documentId());
-            }
-
-            for (Long assigneeId : distinctUserIds) {
-                teamPermissionChecker.requireMember(document.getTeamId(), assigneeId);
             }
 
             LocalDateTime now = LocalDateTime.now();
             List<DocumentRaciEntry> newEntries = assignments.stream()
-                    .map(a -> new DocumentRaciEntry(a.userId(), a.role(), userId, now))
+                    .map(a -> {
+                        Long assigneeUserId = teamPermissionChecker.resolveUserId(document.getTeamId(), a.memberId());
+                        return new DocumentRaciEntry(assigneeUserId, a.role(), userId, now);
+                    })
                     .toList();
 
             List<DocumentRaciEntry> saved = replaceDocumentRaciPort.replaceAll(command.documentId(), newEntries);

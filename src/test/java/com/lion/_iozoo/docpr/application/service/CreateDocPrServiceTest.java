@@ -10,8 +10,8 @@ import com.lion._iozoo.docpr.domain.exception.DocPrDocumentNotFoundException;
 import com.lion._iozoo.docpr.domain.exception.DocPrNotDraftException;
 import com.lion._iozoo.docpr.domain.exception.DocPrRequesterNotAuthorException;
 import com.lion._iozoo.docpr.domain.exception.DocPrSelfApprovalException;
-import com.lion._iozoo.global.exception.ForbiddenException;
 import com.lion._iozoo.team.application.TeamPermissionChecker;
+import com.lion._iozoo.team.domain.exception.TeamMemberNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -45,24 +45,25 @@ class CreateDocPrServiceTest {
         return new DocumentSummary(100L, 1L, authorId, draft);
     }
 
-    private CreateDocPrCommand command(Long approverId) {
-        return new CreateDocPrCommand(100L, approverId, "제안 내용");
+    private CreateDocPrCommand command(Long approverMemberId) {
+        return new CreateDocPrCommand(100L, approverMemberId, "제안 내용");
     }
 
     @Test
     void 작성자_본인이_승인권자를_지정해_전환한다() {
         when(loadDocumentForDocPrPort.loadSummary(100L)).thenReturn(Optional.of(document(10L, true)));
+        when(teamPermissionChecker.resolveUserId(1L, 200L)).thenReturn(20L);
         when(saveDocPrPort.save(org.mockito.ArgumentMatchers.any(DocPr.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        DocPr result = sut().create(10L, command(20L));
+        DocPr result = sut().create(10L, command(200L));
 
         assertThat(result.getDocumentId()).isEqualTo(100L);
         assertThat(result.getRequesterId()).isEqualTo(10L);
         assertThat(result.getApproverId()).isEqualTo(20L);
         assertThat(result.getStatus()).isEqualTo(DocPrStatus.CREATED);
 
-        verify(teamPermissionChecker).requireMember(1L, 20L);
+        verify(teamPermissionChecker).resolveUserId(1L, 200L);
 
         ArgumentCaptor<DocPr> captor = ArgumentCaptor.forClass(DocPr.class);
         verify(saveDocPrPort).save(captor.capture());
@@ -73,7 +74,7 @@ class CreateDocPrServiceTest {
     void 문서가_없으면_예외() {
         when(loadDocumentForDocPrPort.loadSummary(100L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> sut().create(10L, command(20L)))
+        assertThatThrownBy(() -> sut().create(10L, command(200L)))
                 .isInstanceOf(DocPrDocumentNotFoundException.class);
 
         verify(saveDocPrPort, never()).save(org.mockito.ArgumentMatchers.any());
@@ -83,7 +84,7 @@ class CreateDocPrServiceTest {
     void 작성자가_아니면_예외() {
         when(loadDocumentForDocPrPort.loadSummary(100L)).thenReturn(Optional.of(document(10L, true)));
 
-        assertThatThrownBy(() -> sut().create(99L, command(20L)))
+        assertThatThrownBy(() -> sut().create(99L, command(200L)))
                 .isInstanceOf(DocPrRequesterNotAuthorException.class);
 
         verify(saveDocPrPort, never()).save(org.mockito.ArgumentMatchers.any());
@@ -93,7 +94,7 @@ class CreateDocPrServiceTest {
     void 초안_상태가_아니면_예외() {
         when(loadDocumentForDocPrPort.loadSummary(100L)).thenReturn(Optional.of(document(10L, false)));
 
-        assertThatThrownBy(() -> sut().create(10L, command(20L)))
+        assertThatThrownBy(() -> sut().create(10L, command(200L)))
                 .isInstanceOf(DocPrNotDraftException.class);
 
         verify(saveDocPrPort, never()).save(org.mockito.ArgumentMatchers.any());
@@ -102,8 +103,9 @@ class CreateDocPrServiceTest {
     @Test
     void 본인을_승인권자로_지정하면_예외() {
         when(loadDocumentForDocPrPort.loadSummary(100L)).thenReturn(Optional.of(document(10L, true)));
+        when(teamPermissionChecker.resolveUserId(1L, 200L)).thenReturn(10L);
 
-        assertThatThrownBy(() -> sut().create(10L, command(10L)))
+        assertThatThrownBy(() -> sut().create(10L, command(200L)))
                 .isInstanceOf(DocPrSelfApprovalException.class);
 
         verify(saveDocPrPort, never()).save(org.mockito.ArgumentMatchers.any());
@@ -112,10 +114,10 @@ class CreateDocPrServiceTest {
     @Test
     void 승인권자가_팀원이_아니면_예외() {
         when(loadDocumentForDocPrPort.loadSummary(100L)).thenReturn(Optional.of(document(10L, true)));
-        doThrow(new ForbiddenException()).when(teamPermissionChecker).requireMember(1L, 20L);
+        doThrow(new TeamMemberNotFoundException()).when(teamPermissionChecker).resolveUserId(1L, 200L);
 
-        assertThatThrownBy(() -> sut().create(10L, command(20L)))
-                .isInstanceOf(ForbiddenException.class);
+        assertThatThrownBy(() -> sut().create(10L, command(200L)))
+                .isInstanceOf(TeamMemberNotFoundException.class);
 
         verify(saveDocPrPort, never()).save(org.mockito.ArgumentMatchers.any());
     }
