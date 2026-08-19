@@ -48,17 +48,17 @@ public class ChangeDocPrApproverService implements ChangeDocPrApproverUseCase {
                 throw new DocPrAlreadyTerminalException(command.docPrId());
             }
 
-            if (command.newApproverId().equals(docPr.getRequesterId())) {
+            Long newApproverId = teamPermissionChecker.resolveUserId(document.teamId(), command.newApproverMemberId());
+
+            if (newApproverId.equals(docPr.getRequesterId())) {
                 throw new DocPrSelfApprovalException(command.docPrId());
             }
 
-            teamPermissionChecker.requireMember(document.teamId(), command.newApproverId());
-
-            docPr.changeApprover(command.newApproverId());
+            docPr.changeApprover(newApproverId);
             DocPr saved = saveDocPrPort.save(docPr);
 
             log.info("event=docpr_change_approver_완료 userId={}, docPrId={}, newApproverId={}",
-                    userId, command.docPrId(), command.newApproverId());
+                    userId, command.docPrId(), newApproverId);
             return saved;
         } catch (RuntimeException e) {
             log.warn("event=docpr_change_approver_실패 userId={}, docPrId={}, reason={}",

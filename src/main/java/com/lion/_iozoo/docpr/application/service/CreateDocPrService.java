@@ -44,16 +44,16 @@ public class CreateDocPrService implements CreateDocPrUseCase {
                 throw new DocPrNotDraftException(command.documentId());
             }
 
-            if (command.approverId().equals(userId)) {
+            Long approverId = teamPermissionChecker.resolveUserId(document.teamId(), command.approverMemberId());
+
+            if (approverId.equals(userId)) {
                 throw new DocPrSelfApprovalException(command.documentId());
             }
-
-            teamPermissionChecker.requireMember(document.teamId(), command.approverId());
 
             DocPr docPr = DocPr.builder()
                     .documentId(command.documentId())
                     .requesterId(userId)
-                    .approverId(command.approverId())
+                    .approverId(approverId)
                     .proposedContent(command.proposedContent())
                     .status(DocPrStatus.CREATED)
                     .build();
