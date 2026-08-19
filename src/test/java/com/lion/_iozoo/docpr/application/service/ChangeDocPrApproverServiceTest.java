@@ -12,6 +12,7 @@ import com.lion._iozoo.docpr.domain.exception.DocPrNotFoundException;
 import com.lion._iozoo.docpr.domain.exception.DocPrSelfApprovalException;
 import com.lion._iozoo.global.exception.ForbiddenException;
 import com.lion._iozoo.team.application.TeamPermissionChecker;
+import com.lion._iozoo.team.domain.exception.TeamMemberNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -56,20 +57,21 @@ class ChangeDocPrApproverServiceTest {
         when(loadDocPrPort.loadById(1L)).thenReturn(Optional.of(docPr));
         when(loadDocumentForDocPrPort.loadSummary(100L))
                 .thenReturn(Optional.of(new DocumentSummary(100L, 1L, 10L, true)));
+        when(teamPermissionChecker.resolveUserId(1L, 300L)).thenReturn(30L);
         when(saveDocPrPort.save(docPr)).thenReturn(docPr);
 
-        DocPr result = sut().changeApprover(99L, new ChangeDocPrApproverCommand(1L, 30L));
+        DocPr result = sut().changeApprover(99L, new ChangeDocPrApproverCommand(1L, 300L));
 
         assertThat(result.getApproverId()).isEqualTo(30L);
         verify(teamPermissionChecker).requireAdmin(1L, 99L);
-        verify(teamPermissionChecker).requireMember(1L, 30L);
+        verify(teamPermissionChecker).resolveUserId(1L, 300L);
     }
 
     @Test
     void DocPR이_없으면_예외() {
         when(loadDocPrPort.loadById(1L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> sut().changeApprover(99L, new ChangeDocPrApproverCommand(1L, 30L)))
+        assertThatThrownBy(() -> sut().changeApprover(99L, new ChangeDocPrApproverCommand(1L, 300L)))
                 .isInstanceOf(DocPrNotFoundException.class);
 
         verify(saveDocPrPort, never()).save(any());
@@ -82,7 +84,7 @@ class ChangeDocPrApproverServiceTest {
                 .thenReturn(Optional.of(new DocumentSummary(100L, 1L, 10L, true)));
         doThrow(new ForbiddenException()).when(teamPermissionChecker).requireAdmin(1L, 99L);
 
-        assertThatThrownBy(() -> sut().changeApprover(99L, new ChangeDocPrApproverCommand(1L, 30L)))
+        assertThatThrownBy(() -> sut().changeApprover(99L, new ChangeDocPrApproverCommand(1L, 300L)))
                 .isInstanceOf(ForbiddenException.class);
 
         verify(saveDocPrPort, never()).save(any());
@@ -94,7 +96,7 @@ class ChangeDocPrApproverServiceTest {
         when(loadDocumentForDocPrPort.loadSummary(100L))
                 .thenReturn(Optional.of(new DocumentSummary(100L, 1L, 10L, true)));
 
-        assertThatThrownBy(() -> sut().changeApprover(99L, new ChangeDocPrApproverCommand(1L, 30L)))
+        assertThatThrownBy(() -> sut().changeApprover(99L, new ChangeDocPrApproverCommand(1L, 300L)))
                 .isInstanceOf(DocPrAlreadyTerminalException.class);
 
         verify(saveDocPrPort, never()).save(any());
@@ -105,8 +107,9 @@ class ChangeDocPrApproverServiceTest {
         when(loadDocPrPort.loadById(1L)).thenReturn(Optional.of(docPr(DocPrStatus.CREATED)));
         when(loadDocumentForDocPrPort.loadSummary(100L))
                 .thenReturn(Optional.of(new DocumentSummary(100L, 1L, 10L, true)));
+        when(teamPermissionChecker.resolveUserId(1L, 400L)).thenReturn(10L);
 
-        assertThatThrownBy(() -> sut().changeApprover(99L, new ChangeDocPrApproverCommand(1L, 10L)))
+        assertThatThrownBy(() -> sut().changeApprover(99L, new ChangeDocPrApproverCommand(1L, 400L)))
                 .isInstanceOf(DocPrSelfApprovalException.class);
 
         verify(saveDocPrPort, never()).save(any());
@@ -117,10 +120,10 @@ class ChangeDocPrApproverServiceTest {
         when(loadDocPrPort.loadById(1L)).thenReturn(Optional.of(docPr(DocPrStatus.CREATED)));
         when(loadDocumentForDocPrPort.loadSummary(100L))
                 .thenReturn(Optional.of(new DocumentSummary(100L, 1L, 10L, true)));
-        doThrow(new ForbiddenException()).when(teamPermissionChecker).requireMember(1L, 30L);
+        doThrow(new TeamMemberNotFoundException()).when(teamPermissionChecker).resolveUserId(1L, 300L);
 
-        assertThatThrownBy(() -> sut().changeApprover(99L, new ChangeDocPrApproverCommand(1L, 30L)))
-                .isInstanceOf(ForbiddenException.class);
+        assertThatThrownBy(() -> sut().changeApprover(99L, new ChangeDocPrApproverCommand(1L, 300L)))
+                .isInstanceOf(TeamMemberNotFoundException.class);
 
         verify(saveDocPrPort, never()).save(any());
     }

@@ -174,7 +174,7 @@ public class DocumentController {
         SetDocumentRaciCommand command = new SetDocumentRaciCommand(
                 documentId,
                 request.assignments().stream()
-                        .map(a -> new RaciAssignmentCommand(a.userId(), a.role()))
+                        .map(a -> new RaciAssignmentCommand(a.memberId(), a.role()))
                         .toList()
         );
 

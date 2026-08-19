@@ -109,7 +109,7 @@ public class DocPrController {
 
         CreateDocPrCommand command = new CreateDocPrCommand(
                 documentId,
-                request.approverId(),
+                request.approverMemberId(),
                 request.proposedContent()
         );
 
@@ -215,7 +215,7 @@ public class DocPrController {
             @PathVariable Long prId,
             @RequestBody @Valid ChangeDocPrApproverRequest request) {
 
-        ChangeDocPrApproverCommand command = new ChangeDocPrApproverCommand(prId, request.newApproverId());
+        ChangeDocPrApproverCommand command = new ChangeDocPrApproverCommand(prId, request.newApproverMemberId());
 
         DocPr docPr = changeDocPrApproverUseCase.changeApprover(authUser.userId(), command);
 
