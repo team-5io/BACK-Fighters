@@ -30,7 +30,7 @@ public class AiGatewayDocumentLionAdapter implements RequestDocumentLionReviewPo
     @Override
     public DocumentLionGatewayResult requestReview(Long documentId, Long docPrId, Long teamId, UUID requestedBy, String content) {
         AiReviewRequest request = new AiReviewRequest(
-                String.valueOf(documentId), String.valueOf(docPrId), String.valueOf(teamId),
+                documentId, docPrId, teamId,
                 TRIGGER_TYPE_MANUAL, requestedBy.toString(), content);
 
         try {
@@ -66,7 +66,7 @@ public class AiGatewayDocumentLionAdapter implements RequestDocumentLionReviewPo
     }
 
     private record AiReviewRequest(
-            String documentId, String docPrId, String teamId, String triggerType, String requestedBy, String content) {
+            Long documentId, Long docPrId, Long teamId, String triggerType, String requestedBy, String content) {
     }
 
     private record AiReviewIssue(
