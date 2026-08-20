@@ -13,6 +13,8 @@ import java.util.List;
 /**
  * Consumer: team (Team Collaboration Charter)
  * Purpose: team-5io/AI-Fighters의 POST /api/ai/charter/generate를 서버 간으로 호출한다.
+ * AI 기능은 초안 생성뿐이고, 생성된 규칙의 저장/조회/수정/삭제/채택은 BE 자체 CRUD다
+ * (AI가 주는 규칙 id/status는 우리 쪽에서 안 쓰므로 title/description만 취한다).
  */
 @Slf4j
 @Component

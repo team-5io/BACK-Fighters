@@ -1,6 +1,6 @@
 package com.lion._iozoo.team.domain;
 
-public enum CollaborationRuleStatus {
+public enum CharterRuleStatus {
     DRAFT,
     ADOPTED
 }

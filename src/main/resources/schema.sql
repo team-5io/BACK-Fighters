@@ -212,6 +212,17 @@ CREATE TABLE IF NOT EXISTS team_collaboration_charters (
     CONSTRAINT fk_team_collaboration_charters_team FOREIGN KEY (team_id) REFERENCES teams (id)
 ) ENGINE=InnoDB COMMENT '팀별 협업 규칙 헌장 (DocumentLion 결재 기준으로 사용)';
 
+CREATE TABLE IF NOT EXISTS charter_rules (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    team_id     BIGINT   NOT NULL,
+    title       VARCHAR(200) NOT NULL,
+    content     TEXT     NOT NULL,
+    status      ENUM('DRAFT', 'ADOPTED') NOT NULL DEFAULT 'DRAFT',
+    created_at  DATETIME NOT NULL,
+    updated_at  DATETIME NOT NULL,
+    CONSTRAINT fk_charter_rules_team FOREIGN KEY (team_id) REFERENCES teams (id)
+) ENGINE=InnoDB COMMENT '팀별 협업 규칙(Charter) 개별 규칙. AI는 초안 생성만 하고 조회/수정/삭제/채택은 BE 자체 CRUD';
+
 -- =========================================================
 -- 비기능요구사항
 -- =========================================================
@@ -225,3 +236,11 @@ CREATE TABLE IF NOT EXISTS document_access_logs (
     CONSTRAINT fk_document_access_logs_document FOREIGN KEY (document_id) REFERENCES documents (id),
     CONSTRAINT fk_document_access_logs_user FOREIGN KEY (user_id) REFERENCES users (id)
 ) ENGINE=InnoDB COMMENT '지정 참여자 전용 문서 접근 감사 로그';
+
+-- =========================================================
+-- 스키마 변경 (원본 CREATE TABLE 블록은 그대로 두고, 변경은 여기 별도 구문으로 추가)
+-- =========================================================
+
+-- 협업 규칙은 AI-Fighters가 규칙 단위(uuid)로 저장·관리하는 구조로 확인되어(docs/api_contract.md 4절),
+-- BE가 팀당 텍스트 한 덩어리로 흉내내어 저장하던 이 테이블은 더 이상 쓰지 않는다. BE는 프록시만 한다.
+DROP TABLE IF EXISTS team_collaboration_charters;
