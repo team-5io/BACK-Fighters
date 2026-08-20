@@ -23,7 +23,7 @@ public class AiGatewayCharterAdapter implements RequestCharterDraftPort {
 
     @Override
     public List<CharterRuleDraft> requestDraft(Long teamId) {
-        GenerateCharterRequest request = new GenerateCharterRequest(String.valueOf(teamId));
+        GenerateCharterRequest request = new GenerateCharterRequest(teamId);
 
         try {
             GenerateCharterResponse response = aiGatewayRestClient.post()
@@ -47,7 +47,7 @@ public class AiGatewayCharterAdapter implements RequestCharterDraftPort {
         }
     }
 
-    private record GenerateCharterRequest(String teamId) {
+    private record GenerateCharterRequest(Long teamId) {
     }
 
     private record CharterRuleOut(String id, String status, String title, String description) {
