@@ -53,8 +53,8 @@ public class ExceptionMergeDocPrService implements ExceptionMergeDocPrUseCase {
             docPr.mergeWithException(LocalDateTime.now(), command.reason());
 
             DocPr saved = saveDocPrPort.save(docPr);
-            markDocumentOfficialPort.markOfficial(docPr.getDocumentId(), docPr.getProposedContent());
-            recordDocumentVersionPort.record(docPr.getDocumentId(), docPr.getProposedContent(), docPr.getId());
+            markDocumentOfficialPort.markOfficial(docPr.getDocumentId());
+            recordDocumentVersionPort.record(docPr.getDocumentId(), docPr.getId());
             saveDocPrStatusHistoryPort.save(command.docPrId(), fromStatus, DocPrStatus.MERGED, userId,
                     "[예외 Merge] " + command.reason());
 
