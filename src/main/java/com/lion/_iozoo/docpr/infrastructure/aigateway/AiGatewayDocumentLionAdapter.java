@@ -1,6 +1,10 @@
 package com.lion._iozoo.docpr.infrastructure.aigateway;
 
+import com.lion._iozoo.docpr.application.port.out.DocumentBlockContent;
+import com.lion._iozoo.docpr.application.port.out.DocumentLionReviewRequest;
+import com.lion._iozoo.docpr.application.port.out.RelatedDocumentContent;
 import com.lion._iozoo.docpr.application.port.out.RequestDocumentLionReviewPort;
+import com.lion._iozoo.docpr.application.result.AiReviewIssueResult;
 import com.lion._iozoo.docpr.application.result.DocumentLionGatewayResult;
 import com.lion._iozoo.docpr.domain.exception.AiReviewFailedException;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +13,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Consumer: docpr (DocumentLion)
@@ -28,29 +31,47 @@ public class AiGatewayDocumentLionAdapter implements RequestDocumentLionReviewPo
     private final RestClient aiGatewayRestClient;
 
     @Override
-    public DocumentLionGatewayResult requestReview(Long documentId, Long docPrId, Long teamId, UUID requestedBy, String content) {
-        AiReviewRequest request = new AiReviewRequest(
-                documentId, docPrId, teamId,
-                TRIGGER_TYPE_MANUAL, requestedBy.toString(), content);
+    public DocumentLionGatewayResult requestReview(DocumentLionReviewRequest request) {
+        AiReviewRequest body = new AiReviewRequest(
+                request.documentId(), request.docPrId(), request.teamId(),
+                TRIGGER_TYPE_MANUAL, request.requestedBy().toString(), request.content(),
+                toBlockRequests(request.blocks()), toRelatedDocumentRequests(request.relatedDocuments()));
 
         try {
             AiReviewResponse response = aiGatewayRestClient.post()
                     .uri("/api/ai/document-lion/reviews")
-                    .body(request)
+                    .body(body)
                     .retrieve()
                     .body(AiReviewResponse.class);
 
             if (response == null) {
-                throw new AiReviewFailedException(docPrId, null);
+                throw new AiReviewFailedException(request.docPrId(), null);
             }
 
             return toGatewayResult(response.issues());
         } catch (AiReviewFailedException e) {
             throw e;
         } catch (RuntimeException e) {
-            log.warn("event=ai_gateway_document_lion_실패 docPrId={}, reason={}", docPrId, e.getMessage(), e);
-            throw new AiReviewFailedException(docPrId, e);
+            log.warn("event=ai_gateway_document_lion_실패 docPrId={}, reason={}", request.docPrId(), e.getMessage(), e);
+            throw new AiReviewFailedException(request.docPrId(), e);
         }
+    }
+
+    private List<BlockRequest> toBlockRequests(List<DocumentBlockContent> blocks) {
+        if (blocks == null || blocks.isEmpty()) {
+            return null;
+        }
+        return blocks.stream().map(block -> new BlockRequest(block.blockId(), block.content())).toList();
+    }
+
+    private List<RelatedDocumentRequest> toRelatedDocumentRequests(List<RelatedDocumentContent> relatedDocuments) {
+        if (relatedDocuments == null || relatedDocuments.isEmpty()) {
+            return null;
+        }
+        return relatedDocuments.stream()
+                .map(doc -> new RelatedDocumentRequest(
+                        doc.documentId(), doc.title(), doc.content(), doc.relationType(), doc.direction()))
+                .toList();
     }
 
     private DocumentLionGatewayResult toGatewayResult(List<AiReviewIssue> issues) {
@@ -62,16 +83,35 @@ public class AiGatewayDocumentLionAdapter implements RequestDocumentLionReviewPo
                 .reduce((a, b) -> a + "\n" + b)
                 .orElse(null);
 
-        return new DocumentLionGatewayResult(hasConflict, !hasInconsistency, violatesCharter, evidence);
+        List<AiReviewIssueResult> issueResults = issues.stream()
+                .map(issue -> new AiReviewIssueResult(
+                        issue.severity(), issue.issueType(), issue.description(), issue.relatedDocumentId(),
+                        issue.charterRuleId(),
+                        issue.locationRef() == null ? null : issue.locationRef().blockId(),
+                        issue.locationRef() == null ? null : issue.locationRef().quote()))
+                .toList();
+
+        return new DocumentLionGatewayResult(hasConflict, !hasInconsistency, violatesCharter, evidence, issueResults);
+    }
+
+    private record BlockRequest(String blockId, String content) {
+    }
+
+    private record RelatedDocumentRequest(
+            Long documentId, String title, String content, String relationType, String direction) {
     }
 
     private record AiReviewRequest(
-            Long documentId, Long docPrId, Long teamId, String triggerType, String requestedBy, String content) {
+            Long documentId, Long docPrId, Long teamId, String triggerType, String requestedBy, String content,
+            List<BlockRequest> blocks, List<RelatedDocumentRequest> relatedDocuments) {
+    }
+
+    private record LocationRef(String blockId, String quote) {
     }
 
     private record AiReviewIssue(
             String severity, String issueType, String description, Long relatedDocumentId,
-            String charterRuleId, String locationRef) {
+            String charterRuleId, LocationRef locationRef) {
     }
 
     private record AiReviewResponse(String reviewId, String overallVerdict, List<AiReviewIssue> issues) {

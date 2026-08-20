@@ -16,6 +16,7 @@ import com.lion._iozoo.docpr.application.usecase.ApproveDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.ChangeDocPrApproverUseCase;
 import com.lion._iozoo.docpr.application.usecase.CreateDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.ExceptionMergeDocPrUseCase;
+import com.lion._iozoo.docpr.application.usecase.GetAiReviewIssuesUseCase;
 import com.lion._iozoo.docpr.application.usecase.GetAiReviewUseCase;
 import com.lion._iozoo.docpr.application.result.NextAssigneeInfoResult;
 import com.lion._iozoo.docpr.application.usecase.GetDocPrHistoryUseCase;
@@ -27,8 +28,11 @@ import com.lion._iozoo.docpr.application.usecase.MergeCheckDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.MergeDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.RejectDocPrUseCase;
 import com.lion._iozoo.docpr.application.usecase.RequestAiReviewUseCase;
+import com.lion._iozoo.docpr.application.usecase.ResolveAiReviewIssueUseCase;
 import com.lion._iozoo.docpr.application.usecase.ResubmitDocPrUseCase;
+import com.lion._iozoo.docpr.application.usecase.SkipAiReviewIssueUseCase;
 import com.lion._iozoo.docpr.domain.AiReview;
+import com.lion._iozoo.docpr.domain.AiReviewIssue;
 import com.lion._iozoo.docpr.domain.DocPr;
 import com.lion._iozoo.docpr.presentation.api.common.DocPrResponseCode;
 import com.lion._iozoo.docpr.presentation.api.request.AddDocPrReviewRequest;
@@ -37,6 +41,7 @@ import com.lion._iozoo.docpr.presentation.api.request.CreateDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.request.ExceptionMergeDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.request.RejectDocPrRequest;
 import com.lion._iozoo.docpr.presentation.api.request.ResubmitDocPrRequest;
+import com.lion._iozoo.docpr.presentation.api.response.AiReviewIssueResponse;
 import com.lion._iozoo.docpr.presentation.api.response.AiReviewResponse;
 import com.lion._iozoo.docpr.presentation.api.response.DocPrHistoryResponse;
 import com.lion._iozoo.docpr.presentation.api.response.DocPrResponse;
@@ -86,6 +91,9 @@ public class DocPrController {
     private final RequestAiReviewUseCase requestAiReviewUseCase;
     private final GetAiReviewUseCase getAiReviewUseCase;
     private final ListDocPrsUseCase listDocPrsUseCase;
+    private final GetAiReviewIssuesUseCase getAiReviewIssuesUseCase;
+    private final ResolveAiReviewIssueUseCase resolveAiReviewIssueUseCase;
+    private final SkipAiReviewIssueUseCase skipAiReviewIssueUseCase;
 
     @Operation(summary = "Doc PR 목록 조회", description = "팀 공간의 Doc PR 목록을 페이지네이션으로 조회한다. 대상 문서에 대한 RACI 접근수준이 FULL(작성자/R/A/C)인 것만 노출된다.")
     @GetMapping("/doc-prs")
@@ -295,5 +303,43 @@ public class DocPrController {
         AiReview review = getAiReviewUseCase.getByDocPrId(authUser.userId(), prId);
 
         return GlobalApiResponse.ok(DocPrResponseCode.AI_REVIEW_FETCHED, AiReviewResponse.from(review));
+    }
+
+    @Operation(summary = "AI 리뷰 이슈 목록 조회", description = "저장된 AI 리뷰 이슈 중 미해결(UNRESOLVED) 이슈만 조회한다.")
+    @GetMapping("/doc-prs/{prId}/ai-review/issues")
+    public GlobalApiResponse<List<AiReviewIssueResponse>> getAiReviewIssues(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long prId) {
+
+        List<AiReviewIssueResponse> issues = getAiReviewIssuesUseCase.getUnresolvedIssues(authUser.userId(), prId)
+                .stream()
+                .map(AiReviewIssueResponse::from)
+                .toList();
+
+        return GlobalApiResponse.ok(DocPrResponseCode.AI_REVIEW_ISSUES_FETCHED, issues);
+    }
+
+    @Operation(summary = "AI 리뷰 이슈 해결 처리", description = "AI 리뷰 이슈를 해결(RESOLVED) 상태로 변경한다.")
+    @PatchMapping("/doc-prs/{prId}/ai-review/issues/{issueId}/resolve")
+    public GlobalApiResponse<AiReviewIssueResponse> resolveAiReviewIssue(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long prId,
+            @PathVariable Long issueId) {
+
+        AiReviewIssue issue = resolveAiReviewIssueUseCase.resolve(authUser.userId(), prId, issueId);
+
+        return GlobalApiResponse.ok(DocPrResponseCode.AI_REVIEW_ISSUE_RESOLVED, AiReviewIssueResponse.from(issue));
+    }
+
+    @Operation(summary = "AI 리뷰 이슈 건너뛰기", description = "AI 리뷰 이슈를 건너뛰기(SKIPPED) 상태로 변경한다.")
+    @PatchMapping("/doc-prs/{prId}/ai-review/issues/{issueId}/skip")
+    public GlobalApiResponse<AiReviewIssueResponse> skipAiReviewIssue(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long prId,
+            @PathVariable Long issueId) {
+
+        AiReviewIssue issue = skipAiReviewIssueUseCase.skip(authUser.userId(), prId, issueId);
+
+        return GlobalApiResponse.ok(DocPrResponseCode.AI_REVIEW_ISSUE_SKIPPED, AiReviewIssueResponse.from(issue));
     }
 }
