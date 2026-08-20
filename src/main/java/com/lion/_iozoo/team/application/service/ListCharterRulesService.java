@@ -1,12 +1,14 @@
 package com.lion._iozoo.team.application.service;
 
 import com.lion._iozoo.team.application.TeamPermissionChecker;
-import com.lion._iozoo.team.application.port.out.RequestCharterRulesPort;
-import com.lion._iozoo.team.application.result.CharterRule;
 import com.lion._iozoo.team.application.usecase.ListCharterRulesUseCase;
+import com.lion._iozoo.team.domain.CharterRuleStatus;
+import com.lion._iozoo.team.infrastructure.persistence.CharterRuleEntity;
+import com.lion._iozoo.team.infrastructure.persistence.CharterRuleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -16,16 +18,19 @@ import java.util.List;
 public class ListCharterRulesService implements ListCharterRulesUseCase {
 
     private final TeamPermissionChecker teamPermissionChecker;
-    private final RequestCharterRulesPort requestCharterRulesPort;
+    private final CharterRuleRepository charterRuleRepository;
 
     @Override
-    public List<CharterRule> list(Long teamId, Long userId, String status) {
+    @Transactional(readOnly = true)
+    public List<CharterRuleEntity> list(Long teamId, Long userId, CharterRuleStatus status) {
         log.info("event=charter_rules_list_시작 teamId={}, userId={}, status={}", teamId, userId, status);
 
         try {
             teamPermissionChecker.requireMember(teamId, userId);
 
-            List<CharterRule> rules = requestCharterRulesPort.listRules(teamId, status);
+            List<CharterRuleEntity> rules = status == null
+                    ? charterRuleRepository.findByTeamId(teamId)
+                    : charterRuleRepository.findByTeamIdAndStatus(teamId, status);
 
             log.info("event=charter_rules_list_완료 teamId={}, userId={}, count={}", teamId, userId, rules.size());
             return rules;

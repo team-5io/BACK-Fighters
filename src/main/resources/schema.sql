@@ -212,6 +212,17 @@ CREATE TABLE IF NOT EXISTS team_collaboration_charters (
     CONSTRAINT fk_team_collaboration_charters_team FOREIGN KEY (team_id) REFERENCES teams (id)
 ) ENGINE=InnoDB COMMENT '팀별 협업 규칙 헌장 (DocumentLion 결재 기준으로 사용)';
 
+CREATE TABLE IF NOT EXISTS charter_rules (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    team_id     BIGINT   NOT NULL,
+    title       VARCHAR(200) NOT NULL,
+    content     TEXT     NOT NULL,
+    status      ENUM('DRAFT', 'ADOPTED') NOT NULL DEFAULT 'DRAFT',
+    created_at  DATETIME NOT NULL,
+    updated_at  DATETIME NOT NULL,
+    CONSTRAINT fk_charter_rules_team FOREIGN KEY (team_id) REFERENCES teams (id)
+) ENGINE=InnoDB COMMENT '팀별 협업 규칙(Charter) 개별 규칙. AI는 초안 생성만 하고 조회/수정/삭제/채택은 BE 자체 CRUD';
+
 -- =========================================================
 -- 비기능요구사항
 -- =========================================================

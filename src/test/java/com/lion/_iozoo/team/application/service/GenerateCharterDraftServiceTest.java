@@ -3,8 +3,11 @@ package com.lion._iozoo.team.application.service;
 import com.lion._iozoo.global.exception.ForbiddenException;
 import com.lion._iozoo.team.application.TeamPermissionChecker;
 import com.lion._iozoo.team.application.port.out.RequestCharterDraftPort;
-import com.lion._iozoo.team.application.result.CharterRule;
-import com.lion._iozoo.team.domain.exception.CharterGatewayFailedException;
+import com.lion._iozoo.team.application.result.CharterRuleDraft;
+import com.lion._iozoo.team.domain.CharterRuleStatus;
+import com.lion._iozoo.team.domain.exception.CharterDraftFailedException;
+import com.lion._iozoo.team.infrastructure.persistence.CharterRuleEntity;
+import com.lion._iozoo.team.infrastructure.persistence.CharterRuleRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -14,6 +17,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -26,21 +30,26 @@ class GenerateCharterDraftServiceTest {
     private TeamPermissionChecker teamPermissionChecker;
     @Mock
     private RequestCharterDraftPort requestCharterDraftPort;
+    @Mock
+    private CharterRuleRepository charterRuleRepository;
 
     private GenerateCharterDraftService sut() {
-        return new GenerateCharterDraftService(teamPermissionChecker, requestCharterDraftPort);
+        return new GenerateCharterDraftService(teamPermissionChecker, requestCharterDraftPort, charterRuleRepository);
     }
 
     @Test
-    void 관리자면_AI가_생성한_규칙_목록을_그대로_반환한다() {
-        List<CharterRule> rules = List.of(
-                new CharterRule("uuid-1", "draft", "리뷰 SLA", "24시간 이내 리뷰"),
-                new CharterRule("uuid-2", "draft", "소통 채널", "슬랙 #urgent"));
-        when(requestCharterDraftPort.requestDraft(1L)).thenReturn(rules);
+    void 관리자면_AI가_생성한_규칙들을_DRAFT로_저장한다() {
+        when(requestCharterDraftPort.requestDraft(1L)).thenReturn(List.of(
+                new CharterRuleDraft("리뷰 SLA", "24시간 이내 리뷰"),
+                new CharterRuleDraft("소통 채널", "슬랙 #urgent")));
+        when(charterRuleRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        List<CharterRule> result = sut().generate(1L, 10L);
+        List<CharterRuleEntity> result = sut().generate(1L, 10L);
 
-        assertThat(result).isEqualTo(rules);
+        assertThat(result).hasSize(2);
+        assertThat(result).extracting(CharterRuleEntity::getTitle).containsExactly("리뷰 SLA", "소통 채널");
+        assertThat(result).allMatch(rule -> rule.getStatus() == CharterRuleStatus.DRAFT);
+        assertThat(result).allMatch(rule -> rule.getTeamId().equals(1L));
         verify(teamPermissionChecker).requireAdmin(1L, 10L);
     }
 
@@ -56,9 +65,9 @@ class GenerateCharterDraftServiceTest {
 
     @Test
     void AI_Gateway_호출이_실패하면_예외가_전파된다() {
-        when(requestCharterDraftPort.requestDraft(1L)).thenThrow(new CharterGatewayFailedException("generate teamId=1", null));
+        when(requestCharterDraftPort.requestDraft(1L)).thenThrow(new CharterDraftFailedException(1L, null));
 
         assertThatThrownBy(() -> sut().generate(1L, 10L))
-                .isInstanceOf(CharterGatewayFailedException.class);
+                .isInstanceOf(CharterDraftFailedException.class);
     }
 }

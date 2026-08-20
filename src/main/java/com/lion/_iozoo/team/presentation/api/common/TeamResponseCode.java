@@ -15,7 +15,9 @@ public enum TeamResponseCode implements ResponseCode {
     MY_TEAMS_FETCHED("TEAM_200_4", "소속된 팀 목록을 조회했습니다."),
     CHARTER_DRAFT_GENERATED("TEAM_200_5", "협업 규칙 초안을 생성했습니다."),
     CHARTER_RULE_UPDATED("TEAM_200_6", "협업 규칙을 수정했습니다."),
-    CHARTER_RULES_ADOPTED("TEAM_200_7", "협업 규칙을 채택했습니다.");
+    CHARTER_RULES_ADOPTED("TEAM_200_7", "협업 규칙을 채택했습니다."),
+    CHARTER_RULE_CREATED("TEAM_201_3", "협업 규칙을 추가했습니다."),
+    CHARTER_RULE_DELETED("TEAM_200_8", "협업 규칙을 삭제했습니다.");
 
     private final String code;
     private final String message;

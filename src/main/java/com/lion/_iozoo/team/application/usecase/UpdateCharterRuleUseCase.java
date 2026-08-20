@@ -1,8 +1,8 @@
 package com.lion._iozoo.team.application.usecase;
 
 import com.lion._iozoo.team.application.command.UpdateCharterRuleCommand;
-import com.lion._iozoo.team.application.result.CharterRule;
+import com.lion._iozoo.team.infrastructure.persistence.CharterRuleEntity;
 
 public interface UpdateCharterRuleUseCase {
-    CharterRule update(Long teamId, Long userId, String ruleId, UpdateCharterRuleCommand command);
+    CharterRuleEntity update(Long teamId, Long userId, Long ruleId, UpdateCharterRuleCommand command);
 }
