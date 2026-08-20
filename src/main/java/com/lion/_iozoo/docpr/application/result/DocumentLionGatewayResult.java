@@ -1,4 +1,8 @@
 package com.lion._iozoo.docpr.application.result;
 
-public record DocumentLionGatewayResult(boolean hasConflict, boolean isConsistent, boolean violatesCharter, String evidence) {
+import java.util.List;
+
+public record DocumentLionGatewayResult(
+        boolean hasConflict, boolean isConsistent, boolean violatesCharter, String evidence,
+        List<AiReviewIssueResult> issues) {
 }

@@ -1,11 +1,16 @@
 package com.lion._iozoo.docpr.application.service;
 
 import com.lion._iozoo.docpr.application.port.out.CheckDocumentAccessPort;
+import com.lion._iozoo.docpr.application.port.out.DocumentLionReviewRequest;
 import com.lion._iozoo.docpr.application.port.out.DocumentSummary;
 import com.lion._iozoo.docpr.application.port.out.LoadDocPrPort;
+import com.lion._iozoo.docpr.application.port.out.LoadDocumentBlocksForDocPrPort;
 import com.lion._iozoo.docpr.application.port.out.LoadDocumentForDocPrPort;
+import com.lion._iozoo.docpr.application.port.out.LoadRelatedDocumentsForDocPrPort;
 import com.lion._iozoo.docpr.application.port.out.RequestDocumentLionReviewPort;
+import com.lion._iozoo.docpr.application.port.out.SaveAiReviewIssuesPort;
 import com.lion._iozoo.docpr.application.port.out.SaveAiReviewPort;
+import com.lion._iozoo.docpr.application.result.AiReviewIssueResult;
 import com.lion._iozoo.docpr.application.result.DocumentLionGatewayResult;
 import com.lion._iozoo.docpr.domain.AiReview;
 import com.lion._iozoo.docpr.domain.DocPr;
@@ -21,12 +26,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.any;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -46,13 +53,20 @@ class RequestAiReviewServiceTest {
     @Mock
     private LoadUserPort loadUserPort;
     @Mock
+    private LoadDocumentBlocksForDocPrPort loadDocumentBlocksForDocPrPort;
+    @Mock
+    private LoadRelatedDocumentsForDocPrPort loadRelatedDocumentsForDocPrPort;
+    @Mock
     private RequestDocumentLionReviewPort requestDocumentLionReviewPort;
     @Mock
     private SaveAiReviewPort saveAiReviewPort;
+    @Mock
+    private SaveAiReviewIssuesPort saveAiReviewIssuesPort;
 
     private RequestAiReviewService sut() {
         return new RequestAiReviewService(loadDocPrPort, loadDocumentForDocPrPort, checkDocumentAccessPort,
-                teamPermissionChecker, loadUserPort, requestDocumentLionReviewPort, saveAiReviewPort);
+                teamPermissionChecker, loadUserPort, loadDocumentBlocksForDocPrPort, loadRelatedDocumentsForDocPrPort,
+                requestDocumentLionReviewPort, saveAiReviewPort, saveAiReviewIssuesPort);
     }
 
     private DocPr docPr() {
@@ -77,8 +91,12 @@ class RequestAiReviewServiceTest {
                 .thenReturn(Optional.of(new DocumentSummary(100L, 1L, 10L, true)));
         when(checkDocumentAccessPort.hasFullAccess(100L, 30L)).thenReturn(true);
         when(loadUserPort.loadUserById(30L)).thenReturn(Optional.of(user(30L, publicId)));
-        when(requestDocumentLionReviewPort.requestReview(100L, 1L, 1L, publicId, "제안 내용"))
-                .thenReturn(new DocumentLionGatewayResult(false, true, true, "[critical/charter_violation] 위반"));
+        when(loadDocumentBlocksForDocPrPort.loadFlattenedBlocks(100L)).thenReturn(List.of());
+        when(loadRelatedDocumentsForDocPrPort.loadVisibleRelatedDocuments(100L, 30L)).thenReturn(List.of());
+        AiReviewIssueResult issueResult = new AiReviewIssueResult(
+                "critical", "charter_violation", "위반", null, "rule-1", null, null);
+        when(requestDocumentLionReviewPort.requestReview(any(DocumentLionReviewRequest.class)))
+                .thenReturn(new DocumentLionGatewayResult(false, true, true, "[critical/charter_violation] 위반", List.of(issueResult)));
         when(saveAiReviewPort.saveOrReplace(any())).thenAnswer(invocation -> {
             AiReview arg = invocation.getArgument(0);
             return AiReview.builder()
@@ -93,6 +111,7 @@ class RequestAiReviewServiceTest {
         assertThat(result.getDocPrId()).isEqualTo(1L);
         assertThat(result.isViolatesCharter()).isTrue();
         assertThat(result.getEvidence()).isEqualTo("[critical/charter_violation] 위반");
+        verify(saveAiReviewIssuesPort).saveNewIssues(eq(1L), any());
     }
 
     @Test
@@ -102,7 +121,7 @@ class RequestAiReviewServiceTest {
         assertThatThrownBy(() -> sut().request(30L, 1L))
                 .isInstanceOf(DocPrNotFoundException.class);
 
-        verify(requestDocumentLionReviewPort, never()).requestReview(any(), any(), any(), any(), any());
+        verify(requestDocumentLionReviewPort, never()).requestReview(any());
         verify(saveAiReviewPort, never()).saveOrReplace(any());
     }
 

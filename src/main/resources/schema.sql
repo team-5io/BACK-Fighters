@@ -158,6 +158,21 @@ CREATE TABLE IF NOT EXISTS ai_reviews (
     CONSTRAINT fk_ai_reviews_doc_pr FOREIGN KEY (doc_pr_id) REFERENCES doc_prs (id)
 ) ENGINE=InnoDB COMMENT 'DocumentLion AI 리뷰 결과';
 
+CREATE TABLE IF NOT EXISTS ai_review_issues (
+    id                   BIGINT AUTO_INCREMENT PRIMARY KEY,
+    doc_pr_id            BIGINT   NOT NULL,
+    severity             VARCHAR(20)  NOT NULL,
+    issue_type           VARCHAR(30)  NOT NULL,
+    description          TEXT     NOT NULL COMMENT 'AI가 생성한 이슈 설명 (영어)',
+    related_document_id  BIGINT   NULL COMMENT '상충/비일관 대상 문서 (AI가 존재하지 않는 id를 주면 저장 시 NULL로 버림)',
+    charter_rule_id      VARCHAR(100) NULL,
+    block_id             VARCHAR(100) NULL COMMENT 'AI가 이슈 위치로 짚은 블록 id (blocks를 안 보냈으면 NULL)',
+    quote                TEXT     NULL COMMENT '문제 문장의 원문 발췌',
+    status               ENUM('UNRESOLVED', 'RESOLVED', 'SKIPPED') NOT NULL DEFAULT 'UNRESOLVED',
+    created_at           DATETIME NOT NULL,
+    CONSTRAINT fk_ai_review_issues_doc_pr FOREIGN KEY (doc_pr_id) REFERENCES doc_prs (id)
+) ENGINE=InnoDB COMMENT 'DocumentLion AI 리뷰 개별 이슈 (재요청 시 기존 이슈는 보존, 새 이슈만 추가)';
+
 CREATE TABLE IF NOT EXISTS cio_reviews (
     id           BIGINT AUTO_INCREMENT PRIMARY KEY,
     doc_pr_id    BIGINT   NOT NULL,
