@@ -23,7 +23,7 @@ public class AiGatewayWritingAssistantAdapter implements RequestWritingSuggestio
 
     @Override
     public List<WritingSuggestionResult> requestSuggestions(Long documentId, String content, String cursorContext) {
-        SuggestionRequest request = new SuggestionRequest(String.valueOf(documentId), content, cursorContext);
+        SuggestionRequest request = new SuggestionRequest(documentId, content, cursorContext);
 
         try {
             SuggestionResponse response = aiGatewayRestClient.post()
@@ -47,7 +47,7 @@ public class AiGatewayWritingAssistantAdapter implements RequestWritingSuggestio
         }
     }
 
-    private record SuggestionRequest(String documentId, String content, String cursorContext) {
+    private record SuggestionRequest(Long documentId, String content, String cursorContext) {
     }
 
     private record Suggestion(String type, String text) {
