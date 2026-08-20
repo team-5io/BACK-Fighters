@@ -53,8 +53,8 @@ public class MergeDocPrService implements MergeDocPrUseCase {
             docPr.merge(LocalDateTime.now());
 
             DocPr saved = saveDocPrPort.save(docPr);
-            markDocumentOfficialPort.markOfficial(docPr.getDocumentId(), docPr.getProposedContent());
-            recordDocumentVersionPort.record(docPr.getDocumentId(), docPr.getProposedContent(), docPr.getId());
+            markDocumentOfficialPort.markOfficial(docPr.getDocumentId());
+            recordDocumentVersionPort.record(docPr.getDocumentId(), docPr.getId());
             saveDocPrStatusHistoryPort.save(command.docPrId(), fromStatus, DocPrStatus.MERGED, userId, null);
 
             log.info("event=docpr_merge_완료 userId={}, docPrId={}, documentId={}",
