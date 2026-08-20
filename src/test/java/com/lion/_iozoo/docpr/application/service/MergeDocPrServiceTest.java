@@ -63,8 +63,8 @@ class MergeDocPrServiceTest {
 
         assertThat(result.getStatus()).isEqualTo(DocPrStatus.MERGED);
         assertThat(result.getMergedAt()).isNotNull();
-        verify(markDocumentOfficialPort).markOfficial(100L, "제안 내용");
-        verify(recordDocumentVersionPort).record(100L, "제안 내용", 1L);
+        verify(markDocumentOfficialPort).markOfficial(100L);
+        verify(recordDocumentVersionPort).record(100L, 1L);
         verify(saveDocPrStatusHistoryPort).save(eq(1L), eq(DocPrStatus.APPROVED), eq(DocPrStatus.MERGED), eq(20L), isNull());
     }
 
@@ -75,8 +75,8 @@ class MergeDocPrServiceTest {
         assertThatThrownBy(() -> sut().merge(20L, new MergeDocPrCommand(1L)))
                 .isInstanceOf(DocPrNotFoundException.class);
 
-        verify(markDocumentOfficialPort, never()).markOfficial(any(), any());
-        verify(recordDocumentVersionPort, never()).record(any(), any(), any());
+        verify(markDocumentOfficialPort, never()).markOfficial(any());
+        verify(recordDocumentVersionPort, never()).record(any(), any());
     }
 
     @Test
@@ -86,8 +86,8 @@ class MergeDocPrServiceTest {
         assertThatThrownBy(() -> sut().merge(99L, new MergeDocPrCommand(1L)))
                 .isInstanceOf(DocPrNotApproverException.class);
 
-        verify(markDocumentOfficialPort, never()).markOfficial(any(), any());
-        verify(recordDocumentVersionPort, never()).record(any(), any(), any());
+        verify(markDocumentOfficialPort, never()).markOfficial(any());
+        verify(recordDocumentVersionPort, never()).record(any(), any());
     }
 
     @Test
@@ -97,7 +97,7 @@ class MergeDocPrServiceTest {
         assertThatThrownBy(() -> sut().merge(20L, new MergeDocPrCommand(1L)))
                 .isInstanceOf(DocPrNotApprovedException.class);
 
-        verify(markDocumentOfficialPort, never()).markOfficial(any(), any());
-        verify(recordDocumentVersionPort, never()).record(any(), any(), any());
+        verify(markDocumentOfficialPort, never()).markOfficial(any());
+        verify(recordDocumentVersionPort, never()).record(any(), any());
     }
 }
