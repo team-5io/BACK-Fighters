@@ -197,6 +197,12 @@ CREATE TABLE IF NOT EXISTS translations (
     INDEX idx_translations_document_block_lang (document_id, block_id, target_language)
 ) ENGINE=InnoDB COMMENT 'Dev-aware Translation 결과';
 
+-- CREATE TABLE IF NOT EXISTS는 신규 테이블에만 적용되므로, translations가 block_id 도입 이전에
+-- 이미 만들어진 배포 DB에는 아래 구문으로 컬럼/인덱스를 소급 반영한다.
+-- 기존 캐시 행은 block_id=''로 채워지며, 블록 단위 캐시 조회에서 다시 매칭되지 않는 죽은 행으로 남는다(캐시라 무해).
+ALTER TABLE translations ADD COLUMN IF NOT EXISTS block_id VARCHAR(64) NOT NULL DEFAULT '' COMMENT '블록 단위로 번역하므로 blocks.id 참조 (FK 제약은 걸지 않음, blocks와 동일한 이유)';
+ALTER TABLE translations ADD INDEX IF NOT EXISTS idx_translations_document_block_lang (document_id, block_id, target_language);
+
 -- =========================================================
 -- 문화 보더 해소
 -- =========================================================
