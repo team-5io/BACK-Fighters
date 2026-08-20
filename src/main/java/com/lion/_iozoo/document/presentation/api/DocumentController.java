@@ -11,9 +11,9 @@ import com.lion._iozoo.document.application.port.out.LoadUserSummaryPort;
 import com.lion._iozoo.document.application.port.out.UserSummary;
 import com.lion._iozoo.document.application.result.DocumentImpactResult;
 import com.lion._iozoo.document.application.result.DocumentRaciEntry;
-import com.lion._iozoo.document.application.result.DocumentRelationExploreResult;
 import com.lion._iozoo.document.application.result.MyDocumentPermissionResult;
 import com.lion._iozoo.document.application.result.RequestTranslationResult;
+import com.lion._iozoo.document.application.result.DocumentWithRelationsResult;
 import com.lion._iozoo.document.application.result.WritingSuggestionResult;
 import com.lion._iozoo.document.application.usecase.*;
 import com.lion._iozoo.document.domain.Document;
@@ -29,10 +29,10 @@ import com.lion._iozoo.document.presentation.api.request.SetDocumentRaciRequest;
 import com.lion._iozoo.document.presentation.api.request.UpdateDocumentRequest;
 import com.lion._iozoo.document.presentation.api.response.DocumentImpactResponse;
 import com.lion._iozoo.document.presentation.api.response.DocumentRaciResponse;
-import com.lion._iozoo.document.presentation.api.response.DocumentRelationExploreResponse;
 import com.lion._iozoo.document.presentation.api.response.DocumentRelationResponse;
 import com.lion._iozoo.document.presentation.api.response.DocumentResponse;
 import com.lion._iozoo.document.presentation.api.response.DocumentVersionResponse;
+import com.lion._iozoo.document.presentation.api.response.DocumentWithRelationsResponse;
 import com.lion._iozoo.document.presentation.api.response.MyDocumentPermissionResponse;
 import com.lion._iozoo.document.presentation.api.response.TranslationResponse;
 import com.lion._iozoo.document.presentation.api.response.WritingSuggestionsResponse;
@@ -205,17 +205,22 @@ public class DocumentController {
                 DocumentRelationResponse.from(relation));
     }
 
-    @Operation(summary = "문서 관계 그래프 탐색", description = "문서를 노드로, 상위/하위/참조/의존 관계를 양방향으로 탐색한다. restricted 이웃 문서는 RACI 접근수준이 NONE이면 결과에서 숨긴다.")
-    @GetMapping("/{documentId}/relations")
-    public GlobalApiResponse<List<DocumentRelationExploreResponse>> getDocumentRelations(
+    @Operation(summary = "문서 관계 그래프 조회", description = "팀 공간의 문서 목록을 문서 간 관계(상위/하위/참조/의존, 양방향)와 함께 페이지네이션으로 조회한다. 문서 목록 조회와 동일하게 RACI 접근수준으로 필터링되고, 연결된 관계가 없는 독립 문서는 relations가 null이다.")
+    @GetMapping("/relations")
+    public GlobalApiResponse<Page<DocumentWithRelationsResponse>> getDocumentRelations(
             @AuthenticationPrincipal AuthUser authUser,
-            @PathVariable Long documentId) {
+            @RequestParam Long teamId,
+            @PageableDefault(size = 20) Pageable pageable) {
 
-        List<DocumentRelationExploreResult> results = getDocumentRelationsUseCase.explore(authUser.userId(), documentId);
+        Page<DocumentWithRelationsResult> results = getDocumentRelationsUseCase.explore(authUser.userId(), teamId, pageable);
 
-        List<DocumentRelationExploreResponse> response = results.stream()
-                .map(DocumentRelationExploreResponse::from)
-                .toList();
+        Map<Long, UserSummary> summaries = loadAuthorSummaries(
+                results.getContent().stream().map(DocumentWithRelationsResult::document).toList());
+
+        Page<DocumentWithRelationsResponse> response = results.map(result ->
+                DocumentWithRelationsResponse.of(
+                        DocumentResponse.from(result.document(), summaries.get(result.document().getAuthorId())),
+                        result.relations()));
 
         return GlobalApiResponse.ok(DocumentResponseCode.DOCUMENT_RELATIONS_FETCHED, response);
     }
