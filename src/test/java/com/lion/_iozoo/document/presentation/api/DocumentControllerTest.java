@@ -6,6 +6,7 @@ import com.lion._iozoo.document.application.port.out.UserSummary;
 import com.lion._iozoo.document.application.result.DocumentImpactResult;
 import com.lion._iozoo.document.application.result.DocumentRaciEntry;
 import com.lion._iozoo.document.application.result.DocumentRelationExploreResult;
+import com.lion._iozoo.document.application.result.DocumentWithRelationsResult;
 import com.lion._iozoo.document.application.result.MyDocumentPermissionResult;
 import com.lion._iozoo.document.application.usecase.*;
 import com.lion._iozoo.document.domain.Block;
@@ -318,20 +319,32 @@ class DocumentControllerTest {
     }
 
     @Test
-    @DisplayName("GET /documents/{documentId}/relations - 문서 관계 그래프 탐색 성공")
+    @DisplayName("GET /documents/relations - 관계 있는 문서와 독립 문서를 함께 조회 성공")
     void getDocumentRelations_success() throws Exception {
-        DocumentRelationExploreResult result = new DocumentRelationExploreResult(
+        DocumentRelationExploreResult relationResult = new DocumentRelationExploreResult(
                 1L, RelationDirection.OUTGOING, RelationType.REFERENCE, 200L, "이웃 문서", java.time.LocalDateTime.now());
-        given(getDocumentRelationsUseCase.explore(eq(USER_ID), eq(100L))).willReturn(List.of(result));
+        DocumentWithRelationsResult withRelation = new DocumentWithRelationsResult(sampleDocument(), List.of(relationResult));
+        Document independentDoc = Document.builder()
+                .id(101L).teamId(1L).authorId(USER_ID)
+                .title("독립 문서").content("내용")
+                .status(DocumentStatus.DRAFT).restricted(false)
+                .build();
+        DocumentWithRelationsResult withoutRelation = new DocumentWithRelationsResult(independentDoc, null);
+        Page<DocumentWithRelationsResult> page = new PageImpl<>(
+                List.of(withRelation, withoutRelation), PageRequest.of(0, 20), 2);
+        given(getDocumentRelationsUseCase.explore(eq(USER_ID), eq(1L), any())).willReturn(page);
 
-        mockMvc.perform(get("/documents/100/relations")
-                        .with(authentication(authToken())))
+        mockMvc.perform(get("/documents/relations")
+                        .with(authentication(authToken()))
+                        .param("teamId", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("DOCUMENT_200_6"))
-                .andExpect(jsonPath("$.data[0].relationId").value(1L))
-                .andExpect(jsonPath("$.data[0].direction").value("OUTGOING"))
-                .andExpect(jsonPath("$.data[0].neighborDocumentId").value(200L))
-                .andExpect(jsonPath("$.data[0].neighborTitle").value("이웃 문서"));
+                .andExpect(jsonPath("$.data.content[0].document.id").value(100L))
+                .andExpect(jsonPath("$.data.content[0].relations[0].relationId").value(1L))
+                .andExpect(jsonPath("$.data.content[0].relations[0].direction").value("OUTGOING"))
+                .andExpect(jsonPath("$.data.content[0].relations[0].neighborDocumentId").value(200L))
+                .andExpect(jsonPath("$.data.content[1].document.id").value(101L))
+                .andExpect(jsonPath("$.data.content[1].relations").value(org.hamcrest.Matchers.nullValue()));
     }
 
     @Test
